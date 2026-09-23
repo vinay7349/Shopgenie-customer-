@@ -1,0 +1,9 @@
+{
+  "name": "ShopGenie",
+  "description": "Hyperlocal shop discovery, live offers, loyalty wallet, and scan-and-pay self-checkout with shop-owner and admin modes.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
