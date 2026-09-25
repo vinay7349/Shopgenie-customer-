@@ -8,6 +8,7 @@ import { ScanScreen } from './features/customer/ScanScreen';
 import { CartScreen } from './features/customer/CartScreen';
 import { LocalFeedScreen } from './features/customer/LocalFeedScreen';
 import { ShopDetailScreen } from './features/customer/ShopDetailScreen';
+import { ShopMapScreen } from './features/customer/ShopMapScreen';
 import { ProductDetailModal } from './features/customer/ProductDetailModal';
 import { AreaPickerModal, NotificationsDrawer } from './features/customer/AreaAndNotificationModals';
 import { ProfileSettingsModal } from './features/customer/ProfileSettingsModal';
@@ -45,7 +46,7 @@ const ShopGenieMainContent: React.FC = () => {
   } = useShopGenie();
 
   const [isLoyaltyWalletOpen, setIsLoyaltyWalletOpen] = useState(false);
-  const [isFlutterAppMode, setIsFlutterAppMode] = useState(true);
+  const [isFlutterAppMode, setIsFlutterAppMode] = useState(false);
 
   // Render role-specific views
   const renderActiveView = () => {
@@ -65,6 +66,8 @@ const ShopGenieMainContent: React.FC = () => {
     switch (customerTab) {
       case 'home':
         return <HomeScreen />;
+      case 'map':
+        return <ShopMapScreen />;
       case 'search':
         return <SearchScreen />;
       case 'scan':

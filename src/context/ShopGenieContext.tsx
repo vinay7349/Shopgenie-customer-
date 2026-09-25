@@ -52,8 +52,8 @@ interface ShopGenieContextType {
   toggleDeviceViewMode: () => void;
 
   // Navigation
-  customerTab: 'home' | 'search' | 'scan' | 'cart' | 'feed';
-  setCustomerTab: (tab: 'home' | 'search' | 'scan' | 'cart' | 'feed') => void;
+  customerTab: 'home' | 'map' | 'search' | 'scan' | 'cart' | 'feed';
+  setCustomerTab: (tab: 'home' | 'map' | 'search' | 'scan' | 'cart' | 'feed') => void;
   ownerTab: 'dashboard' | 'inventory' | 'offers' | 'orders' | 'store';
   setOwnerTab: (tab: 'dashboard' | 'inventory' | 'offers' | 'orders' | 'store') => void;
   selectedShopId: string | null;
@@ -159,7 +159,7 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   // Navigation
-  const [customerTab, setCustomerTab] = useState<'home' | 'search' | 'scan' | 'cart' | 'feed'>('home');
+  const [customerTab, setCustomerTab] = useState<'home' | 'map' | 'search' | 'scan' | 'cart' | 'feed'>('home');
   const [ownerTab, setOwnerTab] = useState<'dashboard' | 'inventory' | 'offers' | 'orders' | 'store'>('dashboard');
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
