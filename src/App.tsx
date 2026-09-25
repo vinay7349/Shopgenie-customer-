@@ -14,33 +14,27 @@ import { ProfileSettingsModal } from './features/customer/ProfileSettingsModal';
 import { LoyaltyWalletModal } from './features/customer/LoyaltyWalletModal';
 import { AndroidCodeExplorerModal } from './features/code/AndroidCodeExplorerModal';
 import { GlobalSnackbar } from './components/common/Components';
-import { 
-  OwnerDashboardScreen, 
-  OwnerInventoryScreen, 
-  OwnerOffersScreen, 
-  OwnerStoreProfileScreen 
-} from './features/owner/OwnerViews';
 import { AdminDashboardScreen } from './features/admin/AdminDashboardScreen';
+import { FlutterAppSimulator } from './features/flutter/FlutterAppSimulator';
 import { ShopGenieLogo } from './components/common/ShopGenieLogo';
 import { 
   Smartphone, 
   Monitor, 
   Code2, 
-  Store, 
   Users, 
   ShieldCheck, 
   Wifi, 
   BatteryMedium, 
   Award,
-  Sparkles
+  Sparkles,
+  Layers,
+  ShoppingBag
 } from 'lucide-react';
 
 const ShopGenieMainContent: React.FC = () => {
   const {
     currentUser: { role },
     customerTab,
-    ownerTab,
-    setOwnerTab,
     selectedShopId,
     deviceViewMode,
     toggleDeviceViewMode,
@@ -51,29 +45,19 @@ const ShopGenieMainContent: React.FC = () => {
   } = useShopGenie();
 
   const [isLoyaltyWalletOpen, setIsLoyaltyWalletOpen] = useState(false);
+  const [isFlutterAppMode, setIsFlutterAppMode] = useState(true);
 
   // Render role-specific views
   const renderActiveView = () => {
+    if (isFlutterAppMode) {
+      return <FlutterAppSimulator onOpenCodeExplorer={() => setIsCodeModalOpen(true)} />;
+    }
+
     if (role === 'admin') {
       return <AdminDashboardScreen />;
     }
 
-    if (role === 'owner') {
-      switch (ownerTab) {
-        case 'dashboard':
-          return <OwnerDashboardScreen />;
-        case 'inventory':
-          return <OwnerInventoryScreen />;
-        case 'offers':
-          return <OwnerOffersScreen />;
-        case 'store':
-          return <OwnerStoreProfileScreen />;
-        default:
-          return <OwnerDashboardScreen />;
-      }
-    }
-
-    // Customer mode
+    // Customer / Shopper mode
     if (selectedShopId) {
       return <ShopDetailScreen />;
     }
@@ -102,12 +86,37 @@ const ShopGenieMainContent: React.FC = () => {
           <div className="flex items-center gap-3">
             <ShopGenieLogo size={28} showTagline={true} />
             <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-teal-500/10 text-[#0F766E] dark:text-[#5EEAD4] font-semibold text-[11px]">
-              Android Native Spec · Compose & Room
+              Flutter 3.24 · Material 3 & Dart Conversion
             </span>
           </div>
 
           {/* Quick Switchers */}
           <div className="flex items-center gap-2">
+            {/* Mode Switcher: Flutter Mobile vs Web Native Spec */}
+            <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 text-xs font-semibold">
+              <button
+                onClick={() => setIsFlutterAppMode(true)}
+                className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${
+                  isFlutterAppMode
+                    ? 'bg-[#0F766E] text-white shadow-2xs font-bold'
+                    : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
+                }`}
+              >
+                <span>Flutter App</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#5EEAD4]" />
+              </button>
+              <button
+                onClick={() => setIsFlutterAppMode(false)}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  !isFlutterAppMode
+                    ? 'bg-[#0F766E] text-white shadow-2xs font-bold'
+                    : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
+                }`}
+              >
+                Multi-Role Deck
+              </button>
+            </div>
+
             {/* Loyalty Wallet Quick Trigger */}
             <button
               onClick={() => setIsLoyaltyWalletOpen(true)}
@@ -117,39 +126,31 @@ const ShopGenieMainContent: React.FC = () => {
               <span>Loyalty Pass</span>
             </button>
 
-            {/* Role Switcher */}
-            <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 text-xs font-semibold">
-              <button
-                onClick={() => setRole('customer')}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  role === 'customer'
-                    ? 'bg-[#0F766E] text-white shadow-2xs'
-                    : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
-                }`}
-              >
-                Shopper
-              </button>
-              <button
-                onClick={() => setRole('owner')}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  role === 'owner'
-                    ? 'bg-[#0F766E] text-white shadow-2xs'
-                    : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
-                }`}
-              >
-                Owner
-              </button>
-              <button
-                onClick={() => setRole('admin')}
-                className={`px-2.5 py-1 rounded-lg transition-all ${
-                  role === 'admin'
-                    ? 'bg-[#0F766E] text-white shadow-2xs'
-                    : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
-                }`}
-              >
-                Admin
-              </button>
-            </div>
+            {/* Role Switcher (Shopper vs Admin Console) */}
+            {!isFlutterAppMode && (
+              <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 text-xs font-semibold">
+                <button
+                  onClick={() => setRole('customer')}
+                  className={`px-3 py-1 rounded-lg transition-all ${
+                    role === 'customer'
+                      ? 'bg-[#0F766E] text-white shadow-2xs font-bold'
+                      : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
+                  }`}
+                >
+                  Shopper
+                </button>
+                <button
+                  onClick={() => setRole('admin')}
+                  className={`px-3 py-1 rounded-lg transition-all ${
+                    role === 'admin'
+                      ? 'bg-[#0F766E] text-white shadow-2xs font-bold'
+                      : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
+                  }`}
+                >
+                  Admin
+                </button>
+              </div>
+            )}
 
             {/* Frame Mode */}
             <button
@@ -164,13 +165,13 @@ const ShopGenieMainContent: React.FC = () => {
               )}
             </button>
 
-            {/* Android Code Explorer */}
+            {/* Flutter & Dart Code Studio */}
             <button
               onClick={() => setIsCodeModalOpen(true)}
               className="px-3 py-1.5 rounded-xl bg-[#0F766E] text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-[#0c615b] transition-all"
             >
               <Code2 className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">Kotlin Studio</span>
+              <span>Flutter Studio</span>
             </button>
           </div>
         </div>
@@ -193,64 +194,16 @@ const ShopGenieMainContent: React.FC = () => {
               </div>
             </div>
 
-            {/* App Header */}
-            {role === 'customer' ? (
-              <GenieTopBar />
-            ) : role === 'owner' ? (
-              /* Owner Mode Top Tabs */
-              <div className="sticky top-0 z-30 bg-[#F7F8FA]/90 dark:bg-[#0F1412]/90 backdrop-blur-md px-4 py-2.5 border-b border-[#CBD5D2]/40 dark:border-[#3A4642]/50 flex items-center justify-between">
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs font-semibold">
-                  <button
-                    onClick={() => setOwnerTab('dashboard')}
-                    className={`px-3 py-1.5 rounded-full transition-all ${
-                      ownerTab === 'dashboard'
-                        ? 'bg-[#0F766E] text-white shadow-2xs'
-                        : 'text-[#5B6B67] dark:text-[#9DB0AB]'
-                    }`}
-                  >
-                    Dashboard
-                  </button>
-                  <button
-                    onClick={() => setOwnerTab('inventory')}
-                    className={`px-3 py-1.5 rounded-full transition-all ${
-                      ownerTab === 'inventory'
-                        ? 'bg-[#0F766E] text-white shadow-2xs'
-                        : 'text-[#5B6B67] dark:text-[#9DB0AB]'
-                    }`}
-                  >
-                    Inventory
-                  </button>
-                  <button
-                    onClick={() => setOwnerTab('offers')}
-                    className={`px-3 py-1.5 rounded-full transition-all ${
-                      ownerTab === 'offers'
-                        ? 'bg-[#0F766E] text-white shadow-2xs'
-                        : 'text-[#5B6B67] dark:text-[#9DB0AB]'
-                    }`}
-                  >
-                    Offers
-                  </button>
-                  <button
-                    onClick={() => setOwnerTab('store')}
-                    className={`px-3 py-1.5 rounded-full transition-all ${
-                      ownerTab === 'store'
-                        ? 'bg-[#0F766E] text-white shadow-2xs'
-                        : 'text-[#5B6B67] dark:text-[#9DB0AB]'
-                    }`}
-                  >
-                    Settings
-                  </button>
-                </div>
-              </div>
-            ) : null}
+            {/* App Header (Shopper mode top bar) */}
+            {!isFlutterAppMode && role === 'customer' && <GenieTopBar />}
 
             {/* Scrollable Screen Content */}
-            <div className="flex-1 overflow-y-auto relative no-scrollbar">
+            <div className="flex-1 overflow-y-auto relative no-scrollbar flex flex-col">
               {renderActiveView()}
             </div>
 
-            {/* Bottom Nav Bar (Customer Mode) */}
-            {role === 'customer' && !selectedShopId && <CustomerBottomBar />}
+            {/* Bottom Nav Bar (Customer Mode only in web mode) */}
+            {!isFlutterAppMode && role === 'customer' && !selectedShopId && <CustomerBottomBar />}
 
             {/* Android Navigation Gesture Bar */}
             <div className="h-4 bg-[#F7F8FA] dark:bg-[#0F1412] flex items-center justify-center shrink-0 z-50">
@@ -260,53 +213,13 @@ const ShopGenieMainContent: React.FC = () => {
         ) : (
           /* Full Viewport Adaptive View */
           <div className="w-full max-w-5xl h-[88vh] bg-[#F7F8FA] dark:bg-[#0F1412] rounded-3xl border border-[#CBD5D2]/60 dark:border-[#3A4642] shadow-xl flex flex-col overflow-hidden">
-            {role === 'customer' ? (
-              <GenieTopBar />
-            ) : role === 'owner' ? (
-              <div className="bg-white dark:bg-[#171D1B] px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <ShopGenieLogo size={30} showTagline={true} />
-                <div className="flex items-center gap-2 text-xs font-semibold">
-                  <button
-                    onClick={() => setOwnerTab('dashboard')}
-                    className={`px-3.5 py-1.5 rounded-xl ${
-                      ownerTab === 'dashboard' ? 'bg-[#0F766E] text-white' : 'text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    Dashboard
-                  </button>
-                  <button
-                    onClick={() => setOwnerTab('inventory')}
-                    className={`px-3.5 py-1.5 rounded-xl ${
-                      ownerTab === 'inventory' ? 'bg-[#0F766E] text-white' : 'text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    Inventory
-                  </button>
-                  <button
-                    onClick={() => setOwnerTab('offers')}
-                    className={`px-3.5 py-1.5 rounded-xl ${
-                      ownerTab === 'offers' ? 'bg-[#0F766E] text-white' : 'text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    Offers
-                  </button>
-                  <button
-                    onClick={() => setOwnerTab('store')}
-                    className={`px-3.5 py-1.5 rounded-xl ${
-                      ownerTab === 'store' ? 'bg-[#0F766E] text-white' : 'text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    Store Settings
-                  </button>
-                </div>
-              </div>
-            ) : null}
+            {!isFlutterAppMode && role === 'customer' && <GenieTopBar />}
 
-            <div className="flex-1 overflow-y-auto relative no-scrollbar">
+            <div className="flex-1 overflow-y-auto relative no-scrollbar flex flex-col">
               {renderActiveView()}
             </div>
 
-            {role === 'customer' && !selectedShopId && <CustomerBottomBar />}
+            {!isFlutterAppMode && role === 'customer' && !selectedShopId && <CustomerBottomBar />}
           </div>
         )}
       </main>

@@ -283,7 +283,7 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const setRole = (role: UserRole) => {
     setCurrentUser((prev) => ({ ...prev, role }));
     showSnackbar({
-      message: `Switched to ${role === 'customer' ? 'Customer' : role === 'owner' ? 'Shop Owner' : 'Admin'} Mode`,
+      message: `Switched to ${role === 'customer' ? 'Customer / Shopper' : 'Admin'} Mode`,
       type: 'info'
     });
   };
@@ -292,14 +292,14 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsLoggedIn(true);
     setCurrentUser({
       id: 'user-1',
-      name: role === 'owner' ? 'Vikram Rao (Owner)' : role === 'admin' ? 'Genie Admin' : 'Ananya Sharma',
+      name: role === 'admin' ? 'Genie Admin' : 'Ananya Sharma',
       phone: emailOrPhone.includes('@') ? '+91 98451 90812' : emailOrPhone,
       email: emailOrPhone.includes('@') ? emailOrPhone : 'ananya.s@shopgenie.app',
       role,
       savedArea: currentArea
     });
     showSnackbar({
-      message: `Welcome back, ${role === 'owner' ? 'The Old Coffee Roasters' : 'Ananya'}!`,
+      message: `Welcome back, ${role === 'admin' ? 'Genie Admin' : 'Ananya'}!`,
       type: 'success'
     });
   };

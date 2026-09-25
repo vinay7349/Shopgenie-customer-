@@ -6,7 +6,6 @@ import {
   Moon, 
   Sun, 
   Languages, 
-  Store, 
   ShieldCheck, 
   Smartphone, 
   Monitor, 
@@ -45,8 +44,7 @@ export const ProfileSettingsModal: React.FC = () => {
   ];
 
   const roles: { role: UserRole; title: string; desc: string }[] = [
-    { role: 'customer', title: 'Customer', desc: 'Discover shops, scan & pay, collect points' },
-    { role: 'owner', title: 'Shop Owner', desc: 'Manage catalogue, verify exit passes, publish offers' },
+    { role: 'customer', title: 'Customer / Shopper', desc: 'Discover shops, scan & pay, collect points' },
     { role: 'admin', title: 'Admin Console', desc: 'Shop verification queue, user management' }
   ];
 
@@ -126,7 +124,6 @@ export const ProfileSettingsModal: React.FC = () => {
                   >
                     <div className="mt-0.5">
                       {r.role === 'customer' && <ShoppingBag className="w-4 h-4 text-[#0F766E]" />}
-                      {r.role === 'owner' && <Store className="w-4 h-4 text-[#F59E0B]" />}
                       {r.role === 'admin' && <ShieldCheck className="w-4 h-4 text-[#6D5EF5]" />}
                     </div>
                     <div>

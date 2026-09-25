@@ -1,397 +1,533 @@
 import React, { useState } from 'react';
 import { useShopGenie } from '../../context/ShopGenieContext';
-import { X, Copy, Check, FileCode, Folder, Download, Terminal, Smartphone } from 'lucide-react';
+import { X, Copy, Check, FileCode, Terminal, Download, Layers } from 'lucide-react';
 
 interface CodeFile {
   path: string;
-  category: 'gradle' | 'manifest' | 'designsystem' | 'components' | 'domain' | 'data' | 'navigation' | 'features';
-  language: 'kotlin' | 'xml' | 'groovy';
+  category: 'flutter' | 'kotlin' | 'config';
+  language: 'dart' | 'yaml' | 'kotlin' | 'xml';
+  description: string;
   code: string;
 }
 
-const ANDROID_FILES: CodeFile[] = [
+const PROJECT_FILES: CodeFile[] = [
+  // FLUTTER CONVERTED FILES
   {
-    path: 'build.gradle.kts (project)',
-    category: 'gradle',
-    language: 'kotlin',
-    code: `// Top-level build file where you can add configuration options common to all sub-projects/modules.
-plugins {
-    alias(libs.plugins.android.application) apply false
-    alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.kotlin.compose) apply false
-    alias(libs.plugins.hilt.android) apply false
-    alias(libs.plugins.ksp) apply false
-    alias(libs.plugins.kotlinx.serialization) apply false
-}`
+    path: 'flutter_shopgenie/pubspec.yaml',
+    category: 'flutter',
+    language: 'yaml',
+    description: 'Flutter project definition, SDK environment & dependencies',
+    code: `name: shopgenie
+description: "Hyperlocal shop discovery, live offers, loyalty wallet, and scan-and-pay self-checkout in Flutter."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_staggered_animations: ^1.1.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/`
   },
   {
-    path: 'app/build.gradle.kts',
-    category: 'gradle',
-    language: 'kotlin',
-    code: `plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt.android)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlinx.serialization)
+    path: 'flutter_shopgenie/lib/main.dart',
+    category: 'flutter',
+    language: 'dart',
+    description: 'Main Flutter application entry point & Crossfade state machine',
+    code: `import 'package:flutter/material.dart';
+import 'screens/main_navigation_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/splash_screen.dart';
+import 'theme/app_theme.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ShopGenieApp());
 }
 
-android {
-    namespace = "com.shopgenie"
-    compileSdk = 35
-
-    defaultConfig {
-        applicationId = "com.shopgenie"
-        minSdk = 24
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables.useSupportLibrary = true
-
-        buildConfigField("Boolean", "USE_MOCK_DATA", "true")
-        buildConfigField("String", "BASE_URL", "\\"https://api.shopgenie.local/v1/\\"")
-    }
-
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+enum AppFlowState {
+  splash,
+  onboarding,
+  main,
 }
 
-dependencies {
-    // Jetpack Compose & Material 3
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material.icons.extended)
+class ShopGenieApp extends StatefulWidget {
+  const ShopGenieApp({super.key});
 
-    // Navigation Compose & Lifecycle
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    // Hilt Dependency Injection
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
-
-    // Room Database & DataStore
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.datastore.preferences)
-
-    // Retrofit & OkHttp
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.kotlinx.serialization)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
-    implementation(libs.kotlinx.serialization.json)
-
-    // CameraX & ML Kit Barcode Scanning
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
-    implementation(libs.google.mlkit.barcode)
-
-    // Coil Image Loading
-    implementation(libs.coil.compose)
-}`
-  },
-  {
-    path: 'app/src/main/AndroidManifest.xml',
-    category: 'manifest',
-    language: 'xml',
-    code: `<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-
-    <application
-        android:name=".ShopGenieApp"
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.ShopGenie">
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.ShopGenie">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-
-</manifest>`
-  },
-  {
-    path: 'app/src/main/java/com/shopgenie/core/designsystem/Theme.kt',
-    category: 'designsystem',
-    language: 'kotlin',
-    code: `package com.shopgenie.core.designsystem
-
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-
-// ShopGenie Brand Color System
-val GenieTealPrimaryLight = Color(0xFF0F766E)
-val GenieTealPrimaryDark = Color(0xFF5EEAD4)
-val SparkAmberSecondaryLight = Color(0xFFF59E0B)
-val SparkAmberSecondaryDark = Color(0xFFFBBF24)
-val AiVioletTertiaryLight = Color(0xFF6D5EF5)
-val AiVioletTertiaryDark = Color(0xFFB4ABFF)
-
-private val LightColorScheme = lightColorScheme(
-    primary = GenieTealPrimaryLight,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFCCFBF1),
-    onPrimaryContainer = Color(0xFF115E59),
-    secondary = SparkAmberSecondaryLight,
-    onSecondary = Color(0xFF0F1F1C),
-    secondaryContainer = Color(0xFFFEF3C7),
-    tertiary = AiVioletTertiaryLight,
-    background = Color(0xFFF7F8FA),
-    surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFEEF2F1),
-    outline = Color(0xFFCBD5D2)
-)
-
-private val DarkColorScheme = darkColorScheme(
-    primary = GenieTealPrimaryDark,
-    onPrimary = Color(0xFF003833),
-    primaryContainer = Color(0xFF005049),
-    secondary = SparkAmberSecondaryDark,
-    onSecondary = Color(0xFF432B00),
-    tertiary = AiVioletTertiaryDark,
-    background = Color(0xFF0F1412),
-    surface = Color(0xFF171D1B),
-    surfaceVariant = Color(0xFF222B28),
-    outline = Color(0xFF3A4642)
-)
-
-@Composable
-fun ShopGenieTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = ShopGenieTypography,
-        shapes = ShopGenieShapes,
-        content = content
-    )
-}`
-  },
-  {
-    path: 'app/src/main/java/com/shopgenie/domain/model/Shop.kt',
-    category: 'domain',
-    language: 'kotlin',
-    code: `package com.shopgenie.domain.model
-
-enum class ShopCategory(val label: String) {
-    SUPERMARKET("Supermarket"),
-    FOOD_CART("Food Cart"),
-    POP_UP("Pop-up Store"),
-    FASHION("Fashion & Apparel"),
-    BAKERY_CAFE("Bakery & Cafe"),
-    ELECTRONICS("Electronics & Gadgets"),
-    MOTO_AUTO("Moto & Auto Gear"),
-    BOUTIQUE("Boutique"),
-    PHARMACY("Pharmacy"),
-    HOME_DECOR("Home & Decor")
+  @override
+  State<ShopGenieApp> createState() => _ShopGenieAppState();
 }
 
-data class Shop(
-    val id: String,
-    val name: String,
-    val category: ShopCategory,
-    val logoUrl: String,
-    val coverUrl: String,
-    val latitude: Double,
-    val longitude: Double,
-    val distanceM: Int,
-    val rating: Float,
-    val reviewCount: Int,
-    val followerCount: Int,
-    val productCount: Int,
-    val isOpen: Boolean,
-    val hours: String,
-    val address: String,
-    val area: String,
-    val phone: String,
-    val supportsSelfCheckout: Boolean,
-    val verified: Boolean,
-    val paymentMethods: List<String>,
-    val description: String
-)`
-  },
-  {
-    path: 'app/src/main/java/com/shopgenie/domain/repository/ShopRepository.kt',
-    category: 'domain',
-    language: 'kotlin',
-    code: `package com.shopgenie.domain.repository
+class _ShopGenieAppState extends State<ShopGenieApp> {
+  AppFlowState _flowState = AppFlowState.splash;
 
-import com.shopgenie.domain.model.Product
-import com.shopgenie.domain.model.Shop
-import com.shopgenie.domain.model.ShopCategory
-import kotlinx.coroutines.flow.Flow
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'ShopGenie',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeIn,
+        switchOutCurve: Curves.easeOut,
+        child: _buildCurrentScreen(),
+      ),
+    );
+  }
 
-interface ShopRepository {
-    fun getNearbyShops(lat: Double, lng: Double, radiusM: Int = 3000): Flow<List<Shop>>
-    suspend fun getShopById(shopId: String): Shop?
-    fun getFollowedShops(): Flow<List<Shop>>
-    suspend fun toggleFollowShop(shopId: String): Boolean
-    fun searchShopsAndProducts(query: String, category: ShopCategory?): Flow<Pair<List<Shop>, List<Product>>>
-}`
-  },
-  {
-    path: 'app/src/main/java/com/shopgenie/data/repository/FakeShopRepository.kt',
-    category: 'data',
-    language: 'kotlin',
-    code: `package com.shopgenie.data.repository
-
-import com.shopgenie.domain.model.*
-import com.shopgenie.domain.repository.ShopRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-import javax.inject.Singleton
-
-@Singleton
-class FakeShopRepository @Inject constructor() : ShopRepository {
-
-    private val shopsState = MutableStateFlow<List<Shop>>(INITIAL_MOCK_SHOPS)
-    private val followedIds = MutableStateFlow<Set<String>>(setOf("shop-1", "shop-2"))
-
-    override fun getNearbyShops(lat: Double, lng: Double, radiusM: Int): Flow<List<Shop>> =
-        shopsState
-
-    override suspend fun getShopById(shopId: String): Shop? =
-        shopsState.value.find { it.id == shopId }
-
-    override fun getFollowedShops(): Flow<List<Shop>> =
-        followedIds.map { ids -> shopsState.value.filter { it.id in ids } }
-
-    override suspend fun toggleFollowShop(shopId: String): Boolean {
-        val current = followedIds.value
-        val isFollowed = shopId in current
-        followedIds.value = if (isFollowed) current - shopId else current + shopId
-        return !isFollowed
+  Widget _buildCurrentScreen() {
+    switch (_flowState) {
+      case AppFlowState.splash:
+        return SplashScreen(
+          key: const ValueKey('splash_screen'),
+          onSplashFinished: () {
+            setState(() {
+              _flowState = AppFlowState.onboarding;
+            });
+          },
+        );
+      case AppFlowState.onboarding:
+        return OnboardingScreen(
+          key: const ValueKey('onboarding_screen'),
+          onFinished: () {
+            setState(() {
+              _flowState = AppFlowState.main;
+            });
+          },
+        );
+      case AppFlowState.main:
+        return const MainNavigationScreen(
+          key: ValueKey('main_navigation_screen'),
+        );
     }
-
-    override fun searchShopsAndProducts(
-        query: String,
-        category: ShopCategory?
-    ): Flow<Pair<List<Shop>, List<Product>>> =
-        shopsState.map { list ->
-            val matchedShops = list.filter {
-                (category == null || it.category == category) &&
-                (it.name.contains(query, ignoreCase = true) || it.address.contains(query, ignoreCase = true))
-            }
-            Pair(matchedShops, emptyList())
-        }
+  }
 }`
   },
   {
-    path: 'app/src/main/java/com/shopgenie/feature/scan/ScanViewModel.kt',
-    category: 'features',
-    language: 'kotlin',
-    code: `package com.shopgenie.feature.scan
+    path: 'flutter_shopgenie/lib/screens/splash_screen.dart',
+    category: 'flutter',
+    language: 'dart',
+    description: 'Converted animated Genie Lamp, pulsing halo, and staged startup sequence',
+    code: `import 'dart:async';
+import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../widgets/genie_lamp_logo.dart';
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.shopgenie.domain.model.Product
-import com.shopgenie.domain.model.Shop
-import com.shopgenie.domain.repository.ProductRepository
-import com.shopgenie.domain.repository.ShopRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import javax.inject.Inject
+class SplashScreen extends StatefulWidget {
+  final VoidCallback onSplashFinished;
 
-sealed interface ScanUiState {
-    data object Idle : ScanUiState
-    data class ProductFound(val product: Product, val shop: Shop?) : ScanUiState
-    data class StoreEntered(val shop: Shop) : ScanUiState
-    data class Error(val message: String) : ScanUiState
+  const SplashScreen({
+    super.key,
+    required this.onSplashFinished,
+  });
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-@HiltViewModel
-class ScanViewModel @Inject constructor(
-    private val productRepository: ProductRepository,
-    private val shopRepository: ShopRepository
-) : ViewModel() {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _glowAnimation;
+  String _statusText = 'Initializing ShopGenie...';
+  bool _finished = false;
 
-    private val _uiState = MutableStateFlow<ScanUiState>(ScanUiState.Idle)
-    val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
 
-    fun onBarcodeDetected(rawValue: String) {
-        viewModelScope.launch {
-            if (rawValue.startsWith("shop-")) {
-                val shop = shopRepository.getShopById(rawValue)
-                if (shop != null) {
-                    _uiState.value = ScanUiState.StoreEntered(shop)
-                }
-            } else {
-                val product = productRepository.getProductByBarcode(rawValue)
-                if (product != null) {
-                    val shop = shopRepository.getShopById(product.shopId)
-                    _uiState.value = ScanUiState.ProductFound(product, shop)
-                } else {
-                    _uiState.value = ScanUiState.Error("Product not found for barcode: $rawValue")
-                }
-            }
-        }
-    }
+    _glowAnimation = Tween<double>(begin: 0.95, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.fastOutSlowIn),
+    );
 
-    fun resetScanner() {
-        _uiState.value = ScanUiState.Idle
-    }
+    _runStartupSequence();
+  }
+
+  void _runStartupSequence() {
+    Timer(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() => _statusText = 'Locating nearby stores & deals...');
+    });
+    Timer(const Duration(milliseconds: 900), () {
+      if (mounted) setState(() => _statusText = 'Warming up neighbourhood catalog...');
+    });
+    Timer(const Duration(milliseconds: 1300), () {
+      if (mounted) setState(() => _statusText = 'Neighbourhood, granted!');
+    });
+    Timer(const Duration(milliseconds: 1650), _triggerFinish);
+  }
+
+  void _triggerFinish() {
+    if (_finished) return;
+    _finished = true;
+    widget.onSplashFinished();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _triggerFinish,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Positioned(
+                top: 12,
+                right: 16,
+                child: TextButton(
+                  onPressed: _triggerFinish,
+                  child: const Text('Skip', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.genieTeal)),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ScaleTransition(
+                      scale: _glowAnimation,
+                      child: const GenieLampLogo(size: 110),
+                    ),
+                    const SizedBox(height: 28),
+                    Text('ShopGenie', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 8),
+                    Text('ShopGenie - Your neighbourhood, granted.', style: theme.textTheme.bodyLarge),
+                    const SizedBox(height: 48),
+                    const CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation(AppColors.genieTeal)),
+                    const SizedBox(height: 14),
+                    Text(_statusText, style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}`
+  },
+  {
+    path: 'flutter_shopgenie/lib/screens/onboarding_screen.dart',
+    category: 'flutter',
+    language: 'dart',
+    description: 'Converted 3-step carousel with animated pill indicators',
+    code: `import 'package:flutter/material.dart';
+import '../models/onboarding_step.dart';
+import '../theme/app_colors.dart';
+
+class OnboardingScreen extends StatefulWidget {
+  final VoidCallback onFinished;
+  const OnboardingScreen({super.key, required this.onFinished});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final PageController _pageController = PageController();
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isLast = _currentIndex == onboardingSteps.length - 1;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('ShopGenie', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.genieTeal)),
+                  if (!isLast) TextButton(onPressed: widget.onFinished, child: const Text('Skip')),
+                ],
+              ),
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: onboardingSteps.length,
+                  onPageChanged: (i) => setState(() => _currentIndex = i),
+                  itemBuilder: (ctx, i) {
+                    final s = onboardingSteps[i];
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(32), color: Colors.teal.withOpacity(0.08)),
+                          alignment: Alignment.center,
+                          child: Text(s.iconEmoji, style: const TextStyle(fontSize: 72)),
+                        ),
+                        const SizedBox(height: 32),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(color: AppColors.genieTeal.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+                          child: Text(s.highlightBadge, style: const TextStyle(color: AppColors.genieTeal, fontWeight: FontWeight.bold, fontSize: 12)),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(s.title, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        Text(s.subtitle, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (isLast) widget.onFinished();
+                  else _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                },
+                child: Text(isLast ? 'Get Started' : 'Continue'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}`
+  },
+  {
+    path: 'flutter_shopgenie/lib/screens/home_screen.dart',
+    category: 'flutter',
+    language: 'dart',
+    description: 'Converted Home screen with address header, category chips, deal banner, and verified stores',
+    code: `import 'package:flutter/material.dart';
+import '../models/store_item.dart';
+import '../services/shop_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/promo_banner.dart';
+import '../widgets/store_card.dart';
+
+class HomeScreen extends StatefulWidget {
+  final Function(StoreItem) onSelectStore;
+  final VoidCallback onOpenScanner;
+
+  const HomeScreen({
+    super.key,
+    required this.onSelectStore,
+    required this.onOpenScanner,
+  });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _searchQuery = '';
+  String _selectedCategory = 'All';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final filteredStores = ShopService.filterStores(
+      query: _searchQuery,
+      category: _selectedCategory,
+    );
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Bar with Location Selector & Search Field
+            Container(
+              color: theme.colorScheme.surface,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('DELIVERING TO / SHOPPING AT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+                          Text('📍 Koramangala 4th Block ▾', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(color: AppColors.genieTeal.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+                        child: const Text('✨ Genie Verified', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.genieTeal)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    decoration: const InputDecoration(
+                      hintText: 'Search groceries, fresh bakes, medicines...',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Category Chips & Stores List
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  PromoBanner(onTap: widget.onOpenScanner),
+                  const SizedBox(height: 16),
+                  ...filteredStores.map((s) => StoreCard(store: s, onTap: () => widget.onSelectStore(s))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}`
+  },
+  {
+    path: 'flutter_shopgenie/lib/widgets/genie_lamp_logo.dart',
+    category: 'flutter',
+    language: 'dart',
+    description: 'CustomPainter converting Android Compose Canvas genie lamp & sparkles into Flutter',
+    code: `import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+
+class GenieLampLogo extends StatelessWidget {
+  final double size;
+  const GenieLampLogo({super.key, this.size = 88.0});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [AppColors.genieTeal, Color(0xFF0D9488), AppColors.aiViolet],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: CustomPaint(
+          size: Size(size * 0.55, size * 0.55),
+          painter: _GenieLampPainter(),
+        ),
+      ),
+    );
+  }
+}
+
+class _GenieLampPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()..color = Colors.white..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(w * 0.35, h * 0.78)
+      ..lineTo(w * 0.65, h * 0.78)
+      ..lineTo(w * 0.60, h * 0.70)
+      ..lineTo(w * 0.40, h * 0.70)
+      ..close();
+    canvas.drawPath(path, paint);
+
+    final sparkle = Paint()..color = AppColors.sparkAmber..style = PaintingStyle.fill;
+    final sp = Path()
+      ..moveTo(w * 0.82, h * 0.28 - 6)
+      ..quadraticBezierTo(w * 0.82, h * 0.28, w * 0.82 + 6, h * 0.28)
+      ..quadraticBezierTo(w * 0.82, h * 0.28, w * 0.82, h * 0.28 + 6)
+      ..quadraticBezierTo(w * 0.82, h * 0.28, w * 0.82 - 6, h * 0.28)
+      ..quadraticBezierTo(w * 0.82, h * 0.28, w * 0.82, h * 0.28 - 6)
+      ..close();
+    canvas.drawPath(sp, sparkle);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}`
+  },
+  {
+    path: 'flutter_shopgenie/lib/theme/app_theme.dart',
+    category: 'flutter',
+    language: 'dart',
+    description: 'Material 3 Light & Dark themes with exact Android ShopGenie brand colors',
+    code: `import 'package:flutter/material.dart';
+import 'app_colors.dart';
+
+class AppTheme {
+  static ThemeData get lightTheme => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    primaryColor: AppColors.genieTeal,
+    colorScheme: const ColorScheme.light(
+      primary: AppColors.genieTeal,
+      secondary: AppColors.sparkAmber,
+      tertiary: AppColors.aiViolet,
+      surface: AppColors.lightSurface,
+    ),
+  );
+
+  static ThemeData get darkTheme => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    primaryColor: AppColors.genieTealDark,
+    colorScheme: const ColorScheme.dark(
+      primary: AppColors.genieTealDark,
+      secondary: AppColors.sparkAmberLight,
+      tertiary: AppColors.aiVioletDark,
+      surface: AppColors.darkSurface,
+    ),
+  );
 }`
   }
 ];
 
 export const AndroidCodeExplorerModal: React.FC = () => {
   const { isCodeModalOpen, setIsCodeModalOpen, showSnackbar } = useShopGenie();
-  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<'all' | 'flutter' | 'kotlin'>('flutter');
+  const [selectedFileIndex, setSelectedFileIndex] = useState(1);
   const [copied, setCopied] = useState(false);
 
   if (!isCodeModalOpen) return null;
 
-  const currentFile = ANDROID_FILES[selectedFileIndex];
+  const filteredFiles = PROJECT_FILES.filter(f => activeTab === 'all' || f.category === activeTab);
+  const currentFile = filteredFiles[selectedFileIndex] || filteredFiles[0] || PROJECT_FILES[0];
 
   const handleCopy = () => {
     navigator.clipboard?.writeText?.(currentFile.code);
@@ -400,35 +536,59 @@ export const AndroidCodeExplorerModal: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadAll = () => {
+    const bundle = PROJECT_FILES.map(f => `// File: ${f.path}\n// ${f.description}\n\n${f.code}\n\n${'='.repeat(60)}\n\n`).join('');
+    const blob = new Blob([bundle], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ShopGenie-Flutter-Conversion-Bundle.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    showSnackbar({ message: 'Downloaded complete ShopGenie Flutter codebase!', type: 'success' });
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-4xl h-[90vh] bg-slate-950 text-slate-100 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex flex-col animate-in zoom-in-95 duration-200"
+        className="w-full max-w-5xl h-[92vh] bg-slate-950 text-slate-100 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex flex-col animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
         <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-[#5EEAD4] flex items-center justify-center">
-              <Terminal className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-500/20 text-[#5EEAD4] flex items-center justify-center">
+              <Terminal className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading font-bold text-sm text-white">
-                ShopGenie Android Architecture & Kotlin Studio
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm text-white">
+                  ShopGenie Flutter & Android Codebase Studio
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-teal-500/20 text-[#5EEAD4] text-[10px] font-bold">
+                  Flutter 3.24 Converted
+                </span>
+              </div>
               <p className="text-[11px] text-slate-400">
-                Jetpack Compose · MVVM · Hilt · Room · DRF Retrofit · Production Spec
+                Dart Material 3 · Clean Architecture · CustomPainter · Crossfade Navigation
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
+              onClick={handleDownloadAll}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Export Bundle</span>
+            </button>
+            <button
               onClick={handleCopy}
               className="px-3 py-1.5 rounded-xl bg-teal-600/30 text-teal-300 hover:bg-teal-600/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied' : 'Copy Code'}</span>
+              <span>{copied ? 'Copied' : 'Copy File'}</span>
             </button>
             <button
               onClick={() => setIsCodeModalOpen(false)}
@@ -442,24 +602,33 @@ export const AndroidCodeExplorerModal: React.FC = () => {
         {/* Explorer Workspace */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* File Tree Sidebar */}
-          <div className="w-full md:w-72 bg-slate-900/60 border-r border-slate-800 p-3 overflow-y-auto space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 block mb-2">
-              Project Structure
-            </span>
-            {ANDROID_FILES.map((file, idx) => {
-              const isSelected = idx === selectedFileIndex;
+          <div className="w-full md:w-80 bg-slate-900/60 border-r border-slate-800 p-3 overflow-y-auto space-y-1 shrink-0">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px]">
+              <span className="font-bold uppercase tracking-wider text-slate-400">
+                Flutter Converted Files
+              </span>
+              <span className="px-2 py-0.5 rounded bg-teal-500/20 text-[#5EEAD4] font-mono text-[10px]">
+                {filteredFiles.length} files
+              </span>
+            </div>
+
+            {filteredFiles.map((file, idx) => {
+              const isSelected = file.path === currentFile.path;
               return (
                 <button
                   key={file.path}
                   onClick={() => setSelectedFileIndex(idx)}
-                  className={`w-full p-2 rounded-xl text-left text-xs font-mono flex items-center gap-2 transition-colors ${
+                  className={`w-full p-2.5 rounded-xl text-left text-xs font-mono flex items-start gap-2.5 transition-colors ${
                     isSelected
-                      ? 'bg-teal-500/20 text-[#5EEAD4] font-semibold'
+                      ? 'bg-teal-500/20 text-[#5EEAD4] font-semibold ring-1 ring-teal-500/30'
                       : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
                   }`}
                 >
-                  <FileCode className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{file.path}</span>
+                  <FileCode className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{file.path}</div>
+                    <div className="text-[10px] text-slate-500 font-sans truncate">{file.description}</div>
+                  </div>
                 </button>
               );
             })}
@@ -468,8 +637,11 @@ export const AndroidCodeExplorerModal: React.FC = () => {
           {/* Code Viewer */}
           <div className="flex-1 bg-slate-950 p-4 overflow-y-auto flex flex-col font-mono text-xs text-slate-300 leading-relaxed">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 text-slate-400 text-[11px]">
-              <span>{currentFile.path}</span>
-              <span className="uppercase text-[10px] bg-slate-800 px-2 py-0.5 rounded">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white">{currentFile.path}</span>
+                <span className="text-[10px] text-slate-500">({currentFile.description})</span>
+              </div>
+              <span className="uppercase text-[10px] bg-slate-800 px-2 py-0.5 rounded font-bold text-teal-400">
                 {currentFile.language}
               </span>
             </div>

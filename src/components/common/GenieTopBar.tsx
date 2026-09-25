@@ -74,7 +74,7 @@ export const GenieTopBar: React.FC = () => {
               {currentUser.name ? currentUser.name.charAt(0) : <User className="w-4 h-4" />}
             </div>
             <span className="text-[11px] font-semibold capitalize text-[#5B6B67] dark:text-[#9DB0AB] hidden xs:inline">
-              {role === 'owner' ? 'Owner' : role === 'admin' ? 'Admin' : 'You'}
+              {role === 'admin' ? 'Admin' : 'You'}
             </span>
           </button>
         </div>
