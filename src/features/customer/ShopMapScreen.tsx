@@ -255,24 +255,24 @@ export const ShopMapScreen: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full min-h-[85vh] bg-[#F7F8FA] dark:bg-[#0F1412] text-[#0F1F1C] dark:text-[#E8F0EE] pb-24">
+    <div className="flex flex-col h-full min-h-[85vh] bg-[#F8FAFC] text-slate-800 pb-24">
       {/* 1. Header Bar: Search & Quick Product Filters */}
-      <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#171D1B]/95 backdrop-blur-md border-b border-[#CBD5D2]/60 dark:border-[#3A4642] px-3 sm:px-4 py-2.5 shadow-2xs">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-4 py-2.5 shadow-2xs">
         <div className="flex items-center gap-2">
           {/* Search Box: Searches Products & Shops */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5B6B67] dark:text-[#9DB0AB]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search product (coffee, headphones, bread) or shop..."
-              className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#0F1F1C] dark:text-[#E8F0EE] placeholder-[#5B6B67] dark:placeholder-[#9DB0AB] focus:outline-hidden focus:ring-2 focus:ring-[#0F766E]/40 focus:border-[#0F766E] transition-all"
+              className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -284,8 +284,8 @@ export const ShopMapScreen: React.FC = () => {
             onClick={handleLocateMe}
             className={`p-2 rounded-xl border transition-all flex items-center justify-center shrink-0 ${
               isLocating
-                ? 'bg-[#0F766E] text-white border-[#0F766E] animate-pulse'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-[#0F766E]'
+                ? 'bg-blue-600 text-white border-blue-600 animate-pulse'
+                : 'bg-white border-slate-200 text-slate-700 hover:border-blue-500'
             }`}
             title="Locate me & calculate nearest shops"
           >

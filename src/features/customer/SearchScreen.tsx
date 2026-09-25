@@ -3,7 +3,7 @@ import { useShopGenie } from '../../context/ShopGenieContext';
 import { ShopCard, ProductCard } from '../../components/common/Cards';
 import { ALL_CATEGORIES } from '../../utils/categoryTheme';
 import { ShopCategory } from '../../types';
-import { Search, X, Clock, Trash2, Store, Sparkles, Package } from 'lucide-react';
+import { Search, X, Clock, Trash2, Store, Sparkles, Package, Compass } from 'lucide-react';
 
 export const SearchScreen: React.FC = () => {
   const {
@@ -14,7 +14,8 @@ export const SearchScreen: React.FC = () => {
     clearRecentSearches,
     setSelectedShopId,
     setSelectedProductId,
-    currentArea
+    currentArea,
+    setCustomerTab
   } = useShopGenie();
 
   const [query, setQuery] = useState('');
@@ -74,27 +75,39 @@ export const SearchScreen: React.FC = () => {
   return (
     <div className="pb-28 max-w-5xl mx-auto px-4 pt-2">
       {/* 1. Search Bar */}
-      <div className="relative mb-3">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#5B6B67] dark:text-[#9DB0AB]">
-          <Search className="w-4 h-4" />
+      <div className="flex items-center gap-2 mb-3">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <Search className="w-4 h-4" />
+          </div>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search products, stores, barcodes..."
+            className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm transition-colors"
+            autoFocus
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+              aria-label="Clear query"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search products, stores, barcodes..."
-          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white dark:bg-[#171D1B] border border-[#CBD5D2]/60 dark:border-[#3A4642] text-sm text-[#0F1F1C] dark:text-[#E8F0EE] placeholder-[#5B6B67] dark:placeholder-[#9DB0AB] focus:outline-hidden focus:border-[#0F766E] shadow-2xs transition-colors"
-          autoFocus
-        />
-        {query && (
-          <button
-            onClick={() => setQuery('')}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#5B6B67] hover:text-[#0F1F1C] dark:hover:text-white"
-            aria-label="Clear query"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+
+        {/* View on Map Button */}
+        <button
+          onClick={() => setCustomerTab('map')}
+          className="px-3.5 py-3 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-xs"
+          title="Plot search on Google Maps"
+        >
+          <Compass className="w-4 h-4" />
+          <span className="hidden sm:inline">Map</span>
+        </button>
       </div>
 
       {/* 2. Category Filter Chips */}

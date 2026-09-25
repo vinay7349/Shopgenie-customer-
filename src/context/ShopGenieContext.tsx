@@ -134,6 +134,7 @@ const ShopGenieContext = createContext<ShopGenieContextType | undefined>(undefin
 
 export const AVAILABLE_AREAS = [
   'Rajarajeshwari Nagar, Bengaluru',
+  'Neermarga Proper, Neermarga Post',
   'Indiranagar 100ft Rd, Bengaluru',
   'Koramangala 4th Block, Bengaluru',
   'Jayanagar 4th Block, Bengaluru',

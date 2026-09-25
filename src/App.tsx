@@ -181,19 +181,20 @@ const ShopGenieMainContent: React.FC = () => {
       </div>
 
       {/* Main Canvas: Phone Frame or Responsive Viewport */}
-      <main className="flex-1 flex items-center justify-center p-0 sm:p-4 md:p-6 overflow-hidden">
+      <main className="flex-1 flex items-center justify-center p-0 sm:p-4 md:p-6 overflow-hidden bg-[#F1F5F9]">
         {deviceViewMode === 'phone' ? (
           /* Pixel 8 Simulated Device Frame */
-          <div className="relative w-full max-w-[420px] h-[92vh] max-h-[880px] bg-[#F7F8FA] dark:bg-[#0F1412] rounded-[44px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border-[8px] border-[#1E2522] dark:border-[#2A3430] flex flex-col overflow-hidden">
-            {/* Android Status Bar */}
-            <div className="h-7 bg-[#F7F8FA] dark:bg-[#0F1412] px-6 flex items-center justify-between text-[11px] font-bold text-slate-800 dark:text-slate-200 shrink-0 select-none z-40 border-b border-black/5 dark:border-white/5">
-              <span>9:41</span>
+          <div className="relative w-full max-w-[420px] h-[92vh] max-h-[880px] bg-[#F8FAFC] rounded-[44px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.16)] border-[8px] border-slate-900 flex flex-col overflow-hidden">
+            {/* Android Status Bar matching screenshot */}
+            <div className="h-7 bg-white px-6 flex items-center justify-between text-[11px] font-bold text-slate-800 shrink-0 select-none z-40 border-b border-slate-100">
+              <span className="font-semibold">2:39</span>
               {/* Camera Cutout Pill */}
-              <div className="w-3.5 h-3.5 rounded-full bg-black mx-auto ring-1 ring-white/20" />
-              <div className="flex items-center gap-1.5">
-                <Wifi className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-mono">5G</span>
+              <div className="w-3.5 h-3.5 rounded-full bg-black mx-auto ring-1 ring-black/10" />
+              <div className="flex items-center gap-1.5 text-slate-600">
+                <Wifi className="w-3 h-3" />
+                <span className="text-[10px] font-mono font-bold">5G</span>
                 <BatteryMedium className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-medium">85</span>
               </div>
             </div>
 
@@ -201,7 +202,7 @@ const ShopGenieMainContent: React.FC = () => {
             {!isFlutterAppMode && role === 'customer' && <GenieTopBar />}
 
             {/* Scrollable Screen Content */}
-            <div className="flex-1 overflow-y-auto relative no-scrollbar flex flex-col">
+            <div className="flex-1 overflow-y-auto relative no-scrollbar flex flex-col bg-[#F8FAFC]">
               {renderActiveView()}
             </div>
 
@@ -209,16 +210,16 @@ const ShopGenieMainContent: React.FC = () => {
             {!isFlutterAppMode && role === 'customer' && !selectedShopId && <CustomerBottomBar />}
 
             {/* Android Navigation Gesture Bar */}
-            <div className="h-4 bg-[#F7F8FA] dark:bg-[#0F1412] flex items-center justify-center shrink-0 z-50">
-              <div className="w-32 h-1 bg-slate-400/60 dark:bg-slate-600 rounded-full" />
+            <div className="h-4 bg-[#F8FAFC] flex items-center justify-center shrink-0 z-50">
+              <div className="w-32 h-1 bg-slate-300 rounded-full" />
             </div>
           </div>
         ) : (
           /* Full Viewport Adaptive View */
-          <div className="w-full max-w-5xl h-[88vh] bg-[#F7F8FA] dark:bg-[#0F1412] rounded-3xl border border-[#CBD5D2]/60 dark:border-[#3A4642] shadow-xl flex flex-col overflow-hidden">
+          <div className="w-full max-w-5xl h-[88vh] bg-[#F8FAFC] rounded-3xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
             {!isFlutterAppMode && role === 'customer' && <GenieTopBar />}
 
-            <div className="flex-1 overflow-y-auto relative no-scrollbar flex flex-col">
+            <div className="flex-1 overflow-y-auto relative no-scrollbar flex flex-col bg-[#F8FAFC]">
               {renderActiveView()}
             </div>
 
