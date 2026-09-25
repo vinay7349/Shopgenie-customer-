@@ -4,8 +4,8 @@ import { X, Copy, Check, FileCode, Terminal, Download, Layers } from 'lucide-rea
 
 interface CodeFile {
   path: string;
-  category: 'flutter' | 'kotlin' | 'config';
-  language: 'dart' | 'yaml' | 'kotlin' | 'xml';
+  category: 'flutter' | 'kotlin' | 'config' | 'django';
+  language: 'dart' | 'yaml' | 'kotlin' | 'xml' | 'python' | 'bash';
   description: string;
   code: string;
 }
@@ -515,13 +515,154 @@ class AppTheme {
     ),
   );
 }`
+  },
+
+  // DJANGO REST FRAMEWORK BACKEND FILES
+  {
+    path: 'backend_django/api/models.py',
+    category: 'django',
+    language: 'python',
+    description: 'Django ORM Models: Shop, Product, Offer, Order, OrderItem, LoyaltyCard, FeedPost',
+    code: `from django.db import models
+import uuid
+
+class Shop(models.Model):
+    id = models.CharField(max_length=64, primary_key=True, default=lambda: f"shop-{uuid.uuid4().hex[:8]}")
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=100)
+    logo_url = models.URLField(max_length=1024, blank=True, default='')
+    cover_url = models.URLField(max_length=1024, blank=True, default='')
+    lat = models.FloatField(default=12.9248)
+    lng = models.FloatField(default=77.5218)
+    distance_m = models.IntegerField(default=300)
+    rating = models.FloatField(default=4.5)
+    review_count = models.IntegerField(default=0)
+    follower_count = models.IntegerField(default=0)
+    product_count = models.IntegerField(default=0)
+    is_open = models.BooleanField(default=True)
+    hours = models.CharField(max_length=100, default='8:00 AM - 10:00 PM')
+    address = models.CharField(max_length=500)
+    area = models.CharField(max_length=200, default='Rajarajeshwari Nagar')
+    phone = models.CharField(max_length=50, blank=True, default='')
+    supports_self_checkout = models.BooleanField(default=True)
+    verified = models.BooleanField(default=True)
+    payment_methods = models.JSONField(default=list, blank=True)
+    description = models.TextField(blank=True, default='')
+
+class Product(models.Model):
+    id = models.CharField(max_length=64, primary_key=True, default=lambda: f"prod-{uuid.uuid4().hex[:8]}")
+    shop = models.ForeignKey(Shop, related_name='products', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    mrp = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_pct = models.IntegerField(default=0)
+    stock = models.IntegerField(default=10)
+    image_urls = models.JSONField(default=list, blank=True)
+    barcode = models.CharField(max_length=64, db_index=True)
+    description = models.TextField(blank=True, default='')
+    featured = models.BooleanField(default=False)
+
+class Order(models.Model):
+    id = models.CharField(max_length=64, primary_key=True, default=lambda: f"ord-{uuid.uuid4().hex[:8]}")
+    shop = models.ForeignKey(Shop, related_name='orders', on_delete=models.CASCADE)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=32, default='paid')
+    payment_method = models.CharField(max_length=32, default='upi')
+    exit_pass_qr = models.TextField(blank=True, default='')
+    exit_pass_verified = models.BooleanField(default=False)`
+  },
+  {
+    path: 'backend_django/api/views.py',
+    category: 'django',
+    language: 'python',
+    description: 'DRF ViewSets: ShopViewSet, ProductViewSet (Barcode Lookup), OrderViewSet',
+    code: `from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from .models import Shop, Product, Offer, Order, LoyaltyCard, FeedPost
+from .serializers import ShopSerializer, ProductSerializer, OrderSerializer
+
+class ShopViewSet(viewsets.ModelViewSet):
+    queryset = Shop.objects.all().order_by('-rating')
+    serializer_class = ShopSerializer
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all().order_by('-featured', 'name')
+    serializer_class = ProductSerializer
+
+    @action(detail=False, methods=['get'])
+    def lookup_barcode(self, request):
+        barcode = request.query_params.get('barcode')
+        product = Product.objects.filter(barcode=barcode).first()
+        if not product:
+            return Response({'found': False}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'found': True, 'product': self.get_serializer(product).data})
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all().order_by('-created_at')
+    serializer_class = OrderSerializer
+
+    @action(detail=True, methods=['post'])
+    def verify_exit_pass(self, request, pk=None):
+        order = self.get_object()
+        order.exit_pass_verified = True
+        order.status = 'collected'
+        order.save()
+        return Response({'success': True, 'order': self.get_serializer(order).data})`
+  },
+  {
+    path: 'backend_django/shopgenie_backend/settings.py',
+    category: 'django',
+    language: 'python',
+    description: 'Django Project Configuration, CORS Headers, and REST Framework',
+    code: `INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'corsheaders',
+    'rest_framework',
+    'api.apps.ApiConfig',
+]
+
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    ...
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
+}`
+  },
+  {
+    path: 'backend_django/run_django.sh',
+    category: 'django',
+    language: 'bash',
+    description: 'Automated environment setup, dependency install, and migration runner',
+    code: `#!/usr/bin/env bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py makemigrations api
+python manage.py migrate
+python manage.py seed_data
+python manage.py runserver 0.0.0.0:8000`
   }
 ];
 
 export const AndroidCodeExplorerModal: React.FC = () => {
   const { isCodeModalOpen, setIsCodeModalOpen, showSnackbar } = useShopGenie();
-  const [activeTab, setActiveTab] = useState<'all' | 'flutter' | 'kotlin'>('flutter');
-  const [selectedFileIndex, setSelectedFileIndex] = useState(1);
+  const [activeTab, setActiveTab] = useState<'all' | 'flutter' | 'django' | 'kotlin'>('flutter');
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [copied, setCopied] = useState(false);
 
   if (!isCodeModalOpen) return null;
@@ -602,10 +743,30 @@ export const AndroidCodeExplorerModal: React.FC = () => {
         {/* Explorer Workspace */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* File Tree Sidebar */}
-          <div className="w-full md:w-80 bg-slate-900/60 border-r border-slate-800 p-3 overflow-y-auto space-y-1 shrink-0">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px]">
+          <div className="w-full md:w-80 bg-slate-900/60 border-r border-slate-800 p-3 overflow-y-auto space-y-2 shrink-0">
+            {/* Filter Tabs */}
+            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800 text-[10px] font-bold">
+              {(['all', 'flutter', 'django', 'kotlin'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    setSelectedFileIndex(0);
+                  }}
+                  className={`py-1 rounded-lg text-center capitalize transition-all ${
+                    activeTab === tab
+                      ? 'bg-teal-500/20 text-[#5EEAD4] shadow-xs'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {tab === 'django' ? 'Django' : tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between pb-1 border-b border-slate-800/60 text-[11px]">
               <span className="font-bold uppercase tracking-wider text-slate-400">
-                Flutter Converted Files
+                {activeTab === 'django' ? 'Django REST Backend' : activeTab === 'flutter' ? 'Flutter Files' : 'Files'}
               </span>
               <span className="px-2 py-0.5 rounded bg-teal-500/20 text-[#5EEAD4] font-mono text-[10px]">
                 {filteredFiles.length} files

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  django_backend:
+    build: .
+    container_name: shopgenie_django_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DJANGO_SECRET_KEY=shopgenie-local-secret-key-prod-dev
+      - DJANGO_ALLOWED_HOSTS=*
+    volumes:
+      - .:/app
+    command: >
+      sh -c "python manage.py makemigrations api &&
+             python manage.py migrate &&
+             python manage.py seed_data &&
+             python manage.py runserver 0.0.0.0:8000"

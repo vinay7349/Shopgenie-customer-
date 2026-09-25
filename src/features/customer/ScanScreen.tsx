@@ -13,6 +13,7 @@ import {
   Store
 } from 'lucide-react';
 import { Product } from '../../types';
+import { djangoApi } from '../../services/djangoApi';
 
 export const ScanScreen: React.FC = () => {
   const {
@@ -65,7 +66,7 @@ export const ScanScreen: React.FC = () => {
   }, [cameraActive, isFrontCamera]);
 
   // Handle barcode hit
-  const handleBarcodeScanned = (barcode: string) => {
+  const handleBarcodeScanned = async (barcode: string) => {
     if (scanMode === 'store') {
       const matchedShop = shops.find((s) => s.id === barcode || barcode.includes(s.id));
       if (matchedShop) {
@@ -81,7 +82,14 @@ export const ScanScreen: React.FC = () => {
       return;
     }
 
-    const found = products.find((p) => p.barcode === barcode);
+    let found = products.find((p) => p.barcode === barcode);
+    if (!found) {
+      const res = await djangoApi.lookupBarcode(barcode);
+      if (res.found && res.product) {
+        found = res.product;
+      }
+    }
+
     if (found) {
       setScannedProduct(found);
     } else {

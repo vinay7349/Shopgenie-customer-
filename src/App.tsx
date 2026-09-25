@@ -15,6 +15,7 @@ import { ProfileSettingsModal } from './features/customer/ProfileSettingsModal';
 import { LoyaltyWalletModal } from './features/customer/LoyaltyWalletModal';
 import { AndroidCodeExplorerModal } from './features/code/AndroidCodeExplorerModal';
 import { ApkBuildModal } from './features/apk/ApkBuildModal';
+import { DjangoBackendModal } from './features/backend/DjangoBackendModal';
 import { GlobalSnackbar } from './components/common/Components';
 import { AdminDashboardScreen } from './features/admin/AdminDashboardScreen';
 import { FlutterAppSimulator } from './features/flutter/FlutterAppSimulator';
@@ -23,6 +24,7 @@ import {
   Smartphone, 
   Monitor, 
   Code2, 
+  Server,
   Users, 
   ShieldCheck, 
   Wifi, 
@@ -49,6 +51,7 @@ const ShopGenieMainContent: React.FC = () => {
   const [isLoyaltyWalletOpen, setIsLoyaltyWalletOpen] = useState(false);
   const [isFlutterAppMode, setIsFlutterAppMode] = useState(false);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
+  const [isDjangoModalOpen, setIsDjangoModalOpen] = useState(false);
 
   // Render role-specific views
   const renderActiveView = () => {
@@ -179,6 +182,16 @@ const ShopGenieMainContent: React.FC = () => {
               <span>Studio</span>
             </button>
 
+            {/* Django REST Backend Trigger */}
+            <button
+              onClick={() => setIsDjangoModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600/25 font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-all"
+              title="Django REST Backend Architecture & Endpoints"
+            >
+              <Server className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Django API</span>
+            </button>
+
             {/* Build APK Trigger */}
             <button
               onClick={() => setIsApkModalOpen(true)}
@@ -248,6 +261,10 @@ const ShopGenieMainContent: React.FC = () => {
       <ApkBuildModal
         isOpen={isApkModalOpen}
         onClose={() => setIsApkModalOpen(false)}
+      />
+      <DjangoBackendModal
+        isOpen={isDjangoModalOpen}
+        onClose={() => setIsDjangoModalOpen(false)}
       />
       <LoyaltyWalletModal
         isOpen={isLoyaltyWalletOpen}

@@ -21,6 +21,7 @@ import {
   INITIAL_NOTIFICATIONS 
 } from '../data/mockData';
 import { AppLanguage, TRANSLATIONS } from '../translations';
+import { djangoApi } from '../services/djangoApi';
 
 export interface SnackbarInfo {
   message: string;
@@ -268,6 +269,36 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [theme]);
 
+  // Initial Sync from Django REST Framework backend if reachable
+  useEffect(() => {
+    let isMounted = true;
+    const syncFromDjango = async () => {
+      try {
+        const [liveShops, liveOffers, livePosts] = await Promise.all([
+          djangoApi.getShops(),
+          djangoApi.getOffers(),
+          djangoApi.getFeedPosts()
+        ]);
+        if (!isMounted) return;
+        if (liveShops && liveShops.length > 0) {
+          setShops(liveShops);
+        }
+        if (liveOffers && liveOffers.length > 0) {
+          setOffers(liveOffers);
+        }
+        if (livePosts && livePosts.length > 0) {
+          setFeedPosts(livePosts);
+        }
+      } catch {
+        // Fallback gracefully to bundled initial data
+      }
+    };
+    syncFromDjango();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Helpers
   const showSnackbar = (info: SnackbarInfo) => {
     setSnackbar(info);
@@ -427,6 +458,9 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setOrders((prev) => [newOrder, ...prev]);
     clearCart();
 
+    // Sync to Django REST Framework backend
+    djangoApi.createOrder(newOrder).catch(() => {});
+
     // Reward loyalty points
     const earnedPoints = Math.round(total * 0.08);
     setLoyaltyCards((prev) => {
@@ -491,6 +525,7 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setOrders((prev) =>
         prev.map((o) => (o.id === found.id ? { ...o, exitPassVerified: true } : o))
       );
+      djangoApi.verifyExitPass(found.id).catch(() => {});
       showSnackbar({
         message: `Exit Pass Verified for Order #${found.id} (₹${found.total})`,
         type: 'success'
