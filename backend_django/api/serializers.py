@@ -1,5 +1,61 @@
 from rest_framework import serializers
-from .models import Shop, Product, Offer, Order, OrderItem, LoyaltyCard, FeedPost, Notification
+from .models import (
+    User, Shop, Product, LoyaltyPoints, LoyaltyCard, Transaction,
+    Offer, Order, OrderItem, FeedPost, Notification
+)
+
+class UserSerializer(serializers.ModelSerializer):
+    phoneNumber = serializers.CharField(source='phone_number')
+    fullName = serializers.CharField(source='full_name', allow_blank=True, required=False)
+    avatarUrl = serializers.CharField(source='avatar_url', allow_blank=True, required=False)
+    walletBalance = serializers.DecimalField(source='wallet_balance', max_digits=12, decimal_places=2, required=False)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'phoneNumber', 'fullName',
+            'role', 'avatarUrl', 'walletBalance', 'is_active', 'is_verified',
+            'address', 'area', 'city', 'pincode', 'preferences', 'createdAt'
+        ]
+
+class TransactionSerializer(serializers.ModelSerializer):
+    shopId = serializers.CharField(source='shop_id')
+    shopName = serializers.CharField(source='shop.name', read_only=True)
+    userId = serializers.CharField(source='user_id', allow_null=True, required=False)
+    orderId = serializers.CharField(source='order_id', allow_null=True, required=False)
+    transactionType = serializers.CharField(source='transaction_type')
+    paymentMethod = serializers.CharField(source='payment_method')
+    paymentGatewayRef = serializers.CharField(source='payment_gateway_ref', allow_blank=True, required=False)
+    customerPhone = serializers.CharField(source='customer_phone', allow_blank=True, required=False)
+    customerEmail = serializers.CharField(source='customer_email', allow_blank=True, required=False)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = [
+            'id', 'userId', 'shopId', 'shopName', 'orderId', 'transactionType',
+            'amount', 'fee', 'tax', 'paymentMethod', 'paymentGatewayRef',
+            'status', 'currency', 'customerPhone', 'customerEmail', 'metadata', 'createdAt'
+        ]
+
+class LoyaltyPointsSerializer(serializers.ModelSerializer):
+    shopId = serializers.CharField(source='shop_id')
+    shopName = serializers.CharField(source='shop.name', read_only=True)
+    userId = serializers.CharField(source='user_id', allow_null=True, required=False)
+    userPhone = serializers.CharField(source='user_phone', allow_blank=True, required=False)
+    nextRewardAt = serializers.IntegerField(source='next_reward_at', required=False)
+    availableRewards = serializers.ListField(source='available_rewards', required=False)
+    lifetimePoints = serializers.IntegerField(source='lifetime_points', required=False)
+    pointsRedeemed = serializers.IntegerField(source='points_redeemed', required=False)
+
+    class Meta:
+        model = LoyaltyPoints
+        fields = [
+            'id', 'userId', 'shopId', 'shopName', 'userPhone', 'points',
+            'lifetimePoints', 'pointsRedeemed', 'nextRewardAt',
+            'tier', 'barcode', 'availableRewards', 'history', 'updated_at'
+        ]
 
 class ShopSerializer(serializers.ModelSerializer):
     logoUrl = serializers.CharField(source='logo_url', allow_blank=True, required=False)

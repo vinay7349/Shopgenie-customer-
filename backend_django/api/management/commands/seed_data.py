@@ -1,11 +1,43 @@
 from django.core.management.base import BaseCommand
-from api.models import Shop, Product, Offer, LoyaltyCard, FeedPost, Notification
+from decimal import Decimal
+from api.models import User, Shop, Product, Offer, LoyaltyPoints, LoyaltyCard, Transaction, FeedPost, Notification
 
 class Command(BaseCommand):
-    help = 'Seeds initial ShopGenie shops, products, offers, and posts'
+    help = 'Seeds initial ShopGenie shops, products, offers, users, and transactions'
 
     def handle(self, *args, **options):
         self.stdout.write("Seeding ShopGenie initial data...")
+
+        # 0. Users
+        users_data = [
+            {
+                'id': 'usr-demo-shopper',
+                'username': 'arjun_sharma',
+                'email': 'arjun.sharma@example.com',
+                'phone_number': '+91 98765 43210',
+                'full_name': 'Arjun Sharma',
+                'role': 'shopper',
+                'wallet_balance': Decimal('1500.00'),
+                'area': 'Rajarajeshwari Nagar',
+                'city': 'Bengaluru',
+                'pincode': '560098'
+            },
+            {
+                'id': 'usr-merchant-coffee',
+                'username': 'vikram_coffee',
+                'email': 'vikram@coffeeroasters.in',
+                'phone_number': '+91 98450 12091',
+                'full_name': 'Vikram Seth',
+                'role': 'merchant',
+                'wallet_balance': Decimal('24500.00'),
+                'area': 'Rajarajeshwari Nagar',
+                'city': 'Bengaluru'
+            }
+        ]
+        for u_data in users_data:
+            user, created = User.objects.update_or_create(id=u_data['id'], defaults=u_data)
+            action_str = 'Created' if created else 'Updated'
+            self.stdout.write(f"  [{action_str}] User: {user.username} ({user.role})")
 
         # 1. Shops
         shops_data = [
@@ -224,12 +256,16 @@ class Command(BaseCommand):
             action_str = 'Created' if created else 'Updated'
             self.stdout.write(f"  [{action_str}] Offer: {offer.title}")
 
-        # 4. Loyalty Card
-        LoyaltyCard.objects.update_or_create(
+        # 4. Loyalty Points / Card
+        LoyaltyPoints.objects.update_or_create(
             id='card-1',
             defaults={
+                'user_id': 'usr-demo-shopper',
                 'shop_id': 'shop-1',
+                'user_phone': '+91 98765 43210',
                 'points': 140,
+                'lifetime_points': 380,
+                'points_redeemed': 240,
                 'next_reward_at': 200,
                 'tier': 'Silver',
                 'barcode': 'CARD-99120',
@@ -240,6 +276,27 @@ class Command(BaseCommand):
                 'history': [
                     {'id': 'tx-1', 'date': 'Yesterday', 'points': 42, 'type': 'earned', 'description': 'In-store scan purchase'}
                 ]
+            }
+        )
+
+        # 5. Transactions
+        Transaction.objects.update_or_create(
+            id='txn-init-demo-1',
+            defaults={
+                'user_id': 'usr-demo-shopper',
+                'shop_id': 'shop-1',
+                'transaction_type': 'purchase',
+                'amount': Decimal('620.00'),
+                'payment_method': 'upi',
+                'payment_gateway_ref': 'UPI/2026/0925/8920192',
+                'status': 'successful',
+                'customer_phone': '+91 98765 43210',
+                'customer_email': 'arjun.sharma@example.com',
+                'metadata': {
+                    'gateway': 'PhonePe',
+                    'item_count': 2,
+                    'verified_exit': True
+                }
             }
         )
 

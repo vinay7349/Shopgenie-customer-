@@ -522,57 +522,71 @@ class AppTheme {
     path: 'backend_django/api/models.py',
     category: 'django',
     language: 'python',
-    description: 'Django ORM Models: Shop, Product, Offer, Order, OrderItem, LoyaltyCard, FeedPost',
+    description: 'PostgreSQL Core Models: User, Shop, Product, LoyaltyPoints, Transaction, Order',
     code: `from django.db import models
+from decimal import Decimal
 import uuid
 
+# 1. USER MODEL (PostgreSQL JSONB + Indexed Credentials)
+class User(models.Model):
+    ROLE_CHOICES = (('shopper', 'Shopper'), ('merchant', 'Merchant'), ('admin', 'Admin'))
+    id = models.CharField(max_length=64, primary_key=True, default=lambda: f"usr-{uuid.uuid4().hex[:10]}")
+    username = models.CharField(max_length=150, unique=True, db_index=True)
+    email = models.EmailField(unique=True, db_index=True)
+    phone_number = models.CharField(max_length=32, unique=True, db_index=True)
+    full_name = models.CharField(max_length=255, blank=True)
+    role = models.CharField(max_length=32, choices=ROLE_CHOICES, default='shopper')
+    wallet_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    preferences = models.JSONField(default=dict, blank=True)  # PostgreSQL JSONB
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+# 2. SHOP MODEL (Hyperlocal Storefront & Geolocation)
 class Shop(models.Model):
     id = models.CharField(max_length=64, primary_key=True, default=lambda: f"shop-{uuid.uuid4().hex[:8]}")
-    name = models.CharField(max_length=255)
-    category = models.CharField(max_length=100)
-    logo_url = models.URLField(max_length=1024, blank=True, default='')
-    cover_url = models.URLField(max_length=1024, blank=True, default='')
+    owner = models.ForeignKey(User, related_name='shops', on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=255, db_index=True)
+    category = models.CharField(max_length=100, db_index=True)
     lat = models.FloatField(default=12.9248)
     lng = models.FloatField(default=77.5218)
-    distance_m = models.IntegerField(default=300)
     rating = models.FloatField(default=4.5)
-    review_count = models.IntegerField(default=0)
-    follower_count = models.IntegerField(default=0)
-    product_count = models.IntegerField(default=0)
-    is_open = models.BooleanField(default=True)
-    hours = models.CharField(max_length=100, default='8:00 AM - 10:00 PM')
-    address = models.CharField(max_length=500)
     area = models.CharField(max_length=200, default='Rajarajeshwari Nagar')
-    phone = models.CharField(max_length=50, blank=True, default='')
-    supports_self_checkout = models.BooleanField(default=True)
-    verified = models.BooleanField(default=True)
-    payment_methods = models.JSONField(default=list, blank=True)
-    description = models.TextField(blank=True, default='')
+    supports_self_checkout = models.BooleanField(default=True, db_index=True)
+    payment_methods = models.JSONField(default=list, blank=True)  # PostgreSQL JSONB
 
+# 3. PRODUCT MODEL (Instant Barcode Scan & Pricing)
 class Product(models.Model):
     id = models.CharField(max_length=64, primary_key=True, default=lambda: f"prod-{uuid.uuid4().hex[:8]}")
     shop = models.ForeignKey(Shop, related_name='products', on_delete=models.CASCADE)
-    name = models.CharField(max_length=255)
-    category = models.CharField(max_length=100)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    name = models.CharField(max_length=255, db_index=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2)  # PostgreSQL NUMERIC
     mrp = models.DecimalField(max_digits=10, decimal_places=2)
-    discount_pct = models.IntegerField(default=0)
-    stock = models.IntegerField(default=10)
+    barcode = models.CharField(max_length=64, db_index=True)  # EAN-13 Fast Lookup
     image_urls = models.JSONField(default=list, blank=True)
-    barcode = models.CharField(max_length=64, db_index=True)
-    description = models.TextField(blank=True, default='')
     featured = models.BooleanField(default=False)
 
-class Order(models.Model):
-    id = models.CharField(max_length=64, primary_key=True, default=lambda: f"ord-{uuid.uuid4().hex[:8]}")
-    shop = models.ForeignKey(Shop, related_name='orders', on_delete=models.CASCADE)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=32, default='paid')
+# 4. LOYALTY POINTS MODEL (Per-Shop Balance & Rewards)
+class LoyaltyPoints(models.Model):
+    TIERS = (('Bronze', 'Bronze'), ('Silver', 'Silver'), ('Gold', 'Gold'), ('Diamond', 'Diamond'))
+    id = models.CharField(max_length=64, primary_key=True, default=lambda: f"loyalty-{uuid.uuid4().hex[:8]}")
+    user = models.ForeignKey(User, related_name='loyalty_points', on_delete=models.CASCADE, null=True)
+    shop = models.ForeignKey(Shop, related_name='loyalty_accounts', on_delete=models.CASCADE)
+    points = models.IntegerField(default=0)
+    tier = models.CharField(max_length=32, choices=TIERS, default='Silver')
+    available_rewards = models.JSONField(default=list, blank=True)  # PostgreSQL JSONB
+    history = models.JSONField(default=list, blank=True)
+
+# 5. TRANSACTION MODEL (Immutable Financial Ledger)
+class Transaction(models.Model):
+    id = models.CharField(max_length=64, primary_key=True, default=lambda: f"txn-{uuid.uuid4().hex[:12]}")
+    user = models.ForeignKey(User, related_name='transactions', on_delete=models.SET_NULL, null=True)
+    shop = models.ForeignKey(Shop, related_name='transactions', on_delete=models.CASCADE)
+    order = models.ForeignKey('Order', related_name='transactions', on_delete=models.SET_NULL, null=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)  # PostgreSQL NUMERIC
     payment_method = models.CharField(max_length=32, default='upi')
-    exit_pass_qr = models.TextField(blank=True, default='')
-    exit_pass_verified = models.BooleanField(default=False)`
+    payment_gateway_ref = models.CharField(max_length=128, blank=True, db_index=True)
+    status = models.CharField(max_length=32, default='successful', db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)  # PostgreSQL JSONB
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)`
   },
   {
     path: 'backend_django/api/views.py',

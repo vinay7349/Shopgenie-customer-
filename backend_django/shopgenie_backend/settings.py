@@ -61,14 +61,50 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'shopgenie_backend.wsgi.application'
 
-# Database
-# Default to SQLite for easy zero-setup local dev and portable deployment.
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Database Configuration - Seamless PostgreSQL Connection with SQLite fallback
+# Easily connects to PostgreSQL via:
+# 1. DATABASE_URL (e.g. postgresql://user:password@localhost:5432/shopgenie_db)
+# 2. POSTGRES_DB / DB_NAME, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT
+database_url = os.environ.get('DATABASE_URL')
+postgres_db = os.environ.get('POSTGRES_DB') or os.environ.get('DB_NAME')
+
+if database_url:
+    try:
+        import dj_database_url
+        DATABASES = {'default': dj_database_url.parse(database_url)}
+    except ImportError:
+        from urllib.parse import urlparse
+        parsed = urlparse(database_url)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': parsed.path.lstrip('/'),
+                'USER': parsed.username or '',
+                'PASSWORD': parsed.password or '',
+                'HOST': parsed.hostname or 'localhost',
+                'PORT': parsed.port or 5432,
+            }
+        }
+elif postgres_db:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': postgres_db,
+            'USER': os.environ.get('POSTGRES_USER', os.environ.get('DB_USER', 'postgres')),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', os.environ.get('DB_PASSWORD', 'postgres')),
+            'HOST': os.environ.get('POSTGRES_HOST', os.environ.get('DB_HOST', 'localhost')),
+            'PORT': os.environ.get('POSTGRES_PORT', os.environ.get('DB_PORT', '5432')),
+            'CONN_MAX_AGE': 600,
+        }
     }
-}
+else:
+    # Default to SQLite for zero-setup local dev and portable execution
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

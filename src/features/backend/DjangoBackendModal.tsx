@@ -30,7 +30,7 @@ export const DjangoBackendModal: React.FC<DjangoBackendModalProps> = ({ isOpen, 
     url: djangoApi.getBaseUrl()
   });
   const [isChecking, setIsChecking] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'endpoints' | 'models' | 'run'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'postgres' | 'endpoints' | 'run'>('overview');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const checkStatus = async () => {
@@ -65,13 +65,15 @@ export const DjangoBackendModal: React.FC<DjangoBackendModalProps> = ({ isOpen, 
   };
 
   const ENDPOINTS = [
+    { method: 'GET', path: '/api/users/', desc: 'Shopper and merchant accounts, roles & wallet balance' },
     { method: 'GET', path: '/api/shops/', desc: 'List all shops with category, area, & search filters' },
     { method: 'GET', path: '/api/shops/{id}/products/', desc: 'Retrieve catalog of products specific to a shop' },
     { method: 'GET', path: '/api/products/lookup_barcode/?barcode=...', desc: 'Instant barcode scan match for self-checkout' },
     { method: 'GET', path: '/api/offers/', desc: 'List active flash deals and discount promo codes' },
     { method: 'POST', path: '/api/orders/', desc: 'Submit completed self-checkout order with receipt & pass' },
     { method: 'POST', path: '/api/orders/{id}/verify_exit_pass/', desc: 'Store cashier verification of customer QR exit pass' },
-    { method: 'GET', path: '/api/loyalty/', desc: 'Customer loyalty passes, tier perks & rewards history' },
+    { method: 'GET', path: '/api/transactions/', desc: 'Financial transactions ledger & UPI settlements' },
+    { method: 'GET', path: '/api/loyalty/', desc: 'Customer loyalty points, tier perks & rewards history' },
     { method: 'GET', path: '/api/feed/', desc: 'Hyper-local community and merchant updates' },
     { method: 'GET', path: '/admin/', desc: 'Django Admin Portal for store inventory and order management' }
   ];
@@ -143,18 +145,18 @@ export const DjangoBackendModal: React.FC<DjangoBackendModalProps> = ({ isOpen, 
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-5 pt-3 bg-slate-900/60 border-b border-slate-800 flex gap-2">
-          {(['overview', 'endpoints', 'models', 'run'] as const).map((tab) => (
+        <div className="px-5 pt-3 bg-slate-900/60 border-b border-slate-800 flex gap-2 overflow-x-auto">
+          {(['overview', 'models', 'postgres', 'endpoints', 'run'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-2.5 px-3 text-xs font-bold capitalize transition-colors relative ${
+              className={`pb-2.5 px-3 text-xs font-bold capitalize transition-colors relative shrink-0 ${
                 activeTab === tab 
                   ? 'text-emerald-400 border-b-2 border-emerald-400' 
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {tab === 'run' ? 'How to Run (Docker / Python)' : tab}
+              {tab === 'run' ? 'How to Run (Docker / Python)' : tab === 'postgres' ? 'PostgreSQL Setup' : tab === 'models' ? 'PostgreSQL Models' : tab}
             </button>
           ))}
         </div>
@@ -235,48 +237,155 @@ export const DjangoBackendModal: React.FC<DjangoBackendModalProps> = ({ isOpen, 
 
           {activeTab === 'models' && (
             <div className="space-y-3">
-              <div className="text-xs text-slate-400">
-                Defined in <code className="text-emerald-300 font-mono">backend_django/api/models.py</code>:
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-slate-400">
+                  Core models defined in <code className="text-emerald-300 font-mono">backend_django/api/models.py</code> (PostgreSQL JSONB, NUMERIC & B-Tree indexed):
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold">
+                  PostgreSQL & SQLite Compatible
+                </span>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* User Model */}
                 <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    Shop Model
+                  <div className="font-bold text-white flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      1. User Model
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400">api_users</span>
                   </div>
                   <p className="text-slate-400 text-[11px]">
-                    Stores name, category, coordinates (lat, lng), rating, verified status, hours, and supports_self_checkout flag.
+                    Shoppers, store merchants, cashiers, & admins. Includes wallet_balance (<code className="text-slate-300">NUMERIC</code>), indexed email/phone, and PostgreSQL JSONB preferences.
                   </p>
                 </div>
 
+                {/* Shop Model */}
                 <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-400" />
-                    Product Model
+                  <div className="font-bold text-white flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-400" />
+                      2. Shop Model
+                    </span>
+                    <span className="text-[10px] font-mono text-blue-400">api_shops</span>
                   </div>
                   <p className="text-slate-400 text-[11px]">
-                    FK to Shop, name, price, MRP, discount percentage, stock count, and indexed barcode for scanner lookup.
+                    Hyperlocal retail store metadata, owner FK, geocoordinates (<code className="text-slate-300">lat/lng</code>), hours, self-checkout capability, and JSONB payment methods.
                   </p>
                 </div>
 
+                {/* Product Model */}
                 <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    Offer & LoyaltyCard Models
+                  <div className="font-bold text-white flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      3. Product Model
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-400">api_products</span>
                   </div>
                   <p className="text-slate-400 text-[11px]">
-                    Flash discounts with promo codes, validity dates, loyalty tiers (Silver/Gold/Diamond), points balance, and redemption history.
+                    Indexed barcode (<code className="text-slate-300">db_index=True</code>) for instant self-checkout camera scanning, NUMERIC selling price/MRP, stock, and JSONB image arrays.
                   </p>
                 </div>
 
+                {/* LoyaltyPoints Model */}
                 <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
-                  <div className="font-bold text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-purple-400" />
-                    Order & OrderItem Models
+                  <div className="font-bold text-white flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-purple-400" />
+                      4. LoyaltyPoints Model
+                    </span>
+                    <span className="text-[10px] font-mono text-purple-400">api_loyalty</span>
                   </div>
                   <p className="text-slate-400 text-[11px]">
-                    Records self-checkout transactions, UPI payment ID, items bought, and verified digital exit pass status.
+                    Customer loyalty pass per shop, tier progression (Bronze/Silver/Gold/Diamond), points balance, JSONB reward vouchers, and points audit log.
                   </p>
+                </div>
+
+                {/* Transaction Model */}
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+                  <div className="font-bold text-white flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-400" />
+                      5. Transaction Model
+                    </span>
+                    <span className="text-[10px] font-mono text-rose-400">api_transactions</span>
+                  </div>
+                  <p className="text-slate-400 text-[11px]">
+                    Immutable financial ledger for purchases, refunds, and top-ups with high-precision <code className="text-slate-300">NUMERIC(12,2)</code> amounts and payment gateway metadata.
+                  </p>
+                </div>
+
+                {/* Order & OrderItem */}
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
+                  <div className="font-bold text-white flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-teal-400" />
+                      Order & Exit Pass
+                    </span>
+                    <span className="text-[10px] font-mono text-teal-400">api_orders</span>
+                  </div>
+                  <p className="text-slate-400 text-[11px]">
+                    Scanned cart line items, cryptographic exit pass QR string, cashier verification flags, and UPI payment reconciliation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'postgres' && (
+            <div className="space-y-4 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-sm text-white flex items-center gap-2">
+                    <Database className="w-4 h-4 text-blue-400" />
+                    Connecting Django to PostgreSQL
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold">
+                    Zero-Code Configuration
+                  </span>
+                </div>
+                <p className="text-slate-300 text-xs">
+                  <code className="text-emerald-300 font-mono">settings.py</code> is pre-wired to auto-detect PostgreSQL via <code className="text-slate-200">DATABASE_URL</code> or standard PostgreSQL environment variables:
+                </p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between font-semibold text-slate-200 text-xs">
+                    <span>Option A: Connection String URL</span>
+                    <button
+                      onClick={() => copyToClipboard('DATABASE_URL=postgresql://postgres:password@localhost:5432/shopgenie_db', 'db_url')}
+                      className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                      {copiedKey === 'db_url' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      <span>Copy</span>
+                    </button>
+                  </div>
+                  <div className="font-mono bg-slate-950 p-3 rounded-xl border border-slate-800 text-blue-300 text-[11px]">
+                    export DATABASE_URL="postgresql://postgres:password@localhost:5432/shopgenie_db"
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between font-semibold text-slate-200 text-xs">
+                    <span>Option B: Standard PostgreSQL Env Variables</span>
+                  </div>
+                  <div className="font-mono bg-slate-950 p-3 rounded-xl border border-slate-800 text-emerald-300 text-[11px] space-y-1">
+                    <div>export POSTGRES_DB=shopgenie_db</div>
+                    <div>export POSTGRES_USER=postgres</div>
+                    <div>export POSTGRES_PASSWORD=your_secure_password</div>
+                    <div>export POSTGRES_HOST=localhost</div>
+                    <div>export POSTGRES_PORT=5432</div>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-800/40 text-blue-300 text-[11px] space-y-1">
+                  <div className="font-bold">✨ PostgreSQL Native Features Enabled:</div>
+                  <ul className="list-disc pl-4 space-y-0.5 text-blue-200">
+                    <li><strong className="text-white">JSONB Fields:</strong> Used for user preferences, payment method lists, reward catalogues, and gateway metadata.</li>
+                    <li><strong className="text-white">NUMERIC(10,2) / NUMERIC(12,2):</strong> Eliminates floating point rounding issues on customer carts and wallet balances.</li>
+                    <li><strong className="text-white">B-Tree Indexes:</strong> Fast sub-millisecond barcode lookups and customer phone number searches.</li>
+                  </ul>
                 </div>
               </div>
             </div>

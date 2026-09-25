@@ -2,12 +2,49 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
-from .models import Shop, Product, Offer, Order, LoyaltyCard, FeedPost, Notification
-from .serializers import (
-    ShopSerializer, ProductSerializer, OfferSerializer,
-    OrderSerializer, LoyaltyCardSerializer, FeedPostSerializer,
-    NotificationSerializer
+from .models import (
+    User, Shop, Product, LoyaltyPoints, LoyaltyCard, Transaction,
+    Offer, Order, FeedPost, Notification
 )
+from .serializers import (
+    UserSerializer, ShopSerializer, ProductSerializer, OfferSerializer,
+    OrderSerializer, LoyaltyPointsSerializer, LoyaltyCardSerializer,
+    TransactionSerializer, FeedPostSerializer, NotificationSerializer
+)
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('-created_at')
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = self.request.query_params.get('role')
+        phone = self.request.query_params.get('phone')
+        email = self.request.query_params.get('email')
+        if role:
+            qs = qs.filter(role=role)
+        if phone:
+            qs = qs.filter(phone_number=phone)
+        if email:
+            qs = qs.filter(email=email)
+        return qs
+
+class TransactionViewSet(viewsets.ModelViewSet):
+    queryset = Transaction.objects.all().order_by('-created_at')
+    serializer_class = TransactionSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        shop_id = self.request.query_params.get('shop_id')
+        user_id = self.request.query_params.get('user_id')
+        status_filter = self.request.query_params.get('status')
+        if shop_id:
+            qs = qs.filter(shop_id=shop_id)
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
 
 class ShopViewSet(viewsets.ModelViewSet):
     queryset = Shop.objects.all().order_by('-rating')
