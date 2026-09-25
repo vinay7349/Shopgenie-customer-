@@ -14,6 +14,7 @@ import { AreaPickerModal, NotificationsDrawer } from './features/customer/AreaAn
 import { ProfileSettingsModal } from './features/customer/ProfileSettingsModal';
 import { LoyaltyWalletModal } from './features/customer/LoyaltyWalletModal';
 import { AndroidCodeExplorerModal } from './features/code/AndroidCodeExplorerModal';
+import { ApkBuildModal } from './features/apk/ApkBuildModal';
 import { GlobalSnackbar } from './components/common/Components';
 import { AdminDashboardScreen } from './features/admin/AdminDashboardScreen';
 import { FlutterAppSimulator } from './features/flutter/FlutterAppSimulator';
@@ -47,6 +48,7 @@ const ShopGenieMainContent: React.FC = () => {
 
   const [isLoyaltyWalletOpen, setIsLoyaltyWalletOpen] = useState(false);
   const [isFlutterAppMode, setIsFlutterAppMode] = useState(false);
+  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
   // Render role-specific views
   const renderActiveView = () => {
@@ -171,10 +173,19 @@ const ShopGenieMainContent: React.FC = () => {
             {/* Flutter & Dart Code Studio */}
             <button
               onClick={() => setIsCodeModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#0F766E] text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-[#0c615b] transition-all"
+              className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 hover:text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:bg-slate-700 transition-all"
             >
               <Code2 className="w-3.5 h-3.5" />
-              <span>Flutter Studio</span>
+              <span>Studio</span>
+            </button>
+
+            {/* Build APK Trigger */}
+            <button
+              onClick={() => setIsApkModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs hover:bg-blue-700 transition-all"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Build APK</span>
             </button>
           </div>
         </div>
@@ -234,6 +245,10 @@ const ShopGenieMainContent: React.FC = () => {
       <NotificationsDrawer />
       <ProfileSettingsModal />
       <AndroidCodeExplorerModal />
+      <ApkBuildModal
+        isOpen={isApkModalOpen}
+        onClose={() => setIsApkModalOpen(false)}
+      />
       <LoyaltyWalletModal
         isOpen={isLoyaltyWalletOpen}
         onClose={() => setIsLoyaltyWalletOpen(false)}

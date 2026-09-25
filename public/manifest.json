@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "name": "ShopGenie - Hyperlocal Shopping",
+  "short_name": "ShopGenie",
+  "description": "Hyperlocal shop discovery, live offers, loyalty wallet, and scan-and-pay self-checkout.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "icons": [
+    {
+      "src": "/shop_hero_banner.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/shop_hero_banner.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["shopping", "productivity", "utilities"]
+}
