@@ -75,6 +75,7 @@ class DjangoApiService {
    * Fetch all shops with optional filtering
    */
   async getShops(params?: { category?: string; area?: string; search?: string }): Promise<Shop[] | null> {
+    if (this.isOnlineCached === false) return null;
     try {
       const query = new URLSearchParams();
       if (params?.category && params.category !== 'All') query.set('category', params.category);
@@ -93,6 +94,7 @@ class DjangoApiService {
    * Fetch products by shop or category
    */
   async getProducts(params?: { shopId?: string; category?: string; search?: string }): Promise<Product[] | null> {
+    if (this.isOnlineCached === false) return null;
     try {
       const query = new URLSearchParams();
       if (params?.shopId) query.set('shop_id', params.shopId);
@@ -129,6 +131,7 @@ class DjangoApiService {
    * Fetch offers
    */
   async getOffers(shopId?: string): Promise<Offer[] | null> {
+    if (this.isOnlineCached === false) return null;
     try {
       const query = shopId ? `?shop_id=${shopId}` : '';
       const res = await fetch(`${this.baseUrl}/offers/${query}`);
@@ -143,6 +146,7 @@ class DjangoApiService {
    * Create an order in Django backend
    */
   async createOrder(orderData: Partial<Order>): Promise<Order | null> {
+    if (this.isOnlineCached === false) return null;
     try {
       const res = await fetch(`${this.baseUrl}/orders/`, {
         method: 'POST',
@@ -160,6 +164,7 @@ class DjangoApiService {
    * Verify an exit pass QR code
    */
   async verifyExitPass(orderId: string): Promise<boolean> {
+    if (this.isOnlineCached === false) return false;
     try {
       const res = await fetch(`${this.baseUrl}/orders/${orderId}/verify_exit_pass/`, {
         method: 'POST',
@@ -175,6 +180,7 @@ class DjangoApiService {
    * Fetch loyalty cards
    */
   async getLoyaltyCards(): Promise<LoyaltyCard[] | null> {
+    if (this.isOnlineCached === false) return null;
     try {
       const res = await fetch(`${this.baseUrl}/loyalty/`);
       if (!res.ok) return null;
@@ -188,6 +194,7 @@ class DjangoApiService {
    * Fetch community feed posts
    */
   async getFeedPosts(): Promise<FeedPost[] | null> {
+    if (this.isOnlineCached === false) return null;
     try {
       const res = await fetch(`${this.baseUrl}/feed/`);
       if (!res.ok) return null;

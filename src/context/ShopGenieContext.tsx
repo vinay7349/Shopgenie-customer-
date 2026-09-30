@@ -175,6 +175,7 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Domain Collections
   const [shops, setShops] = useState<Shop[]>(INITIAL_SHOPS);
+  const [ownerShop, setOwnerShop] = useState<Shop>(INITIAL_SHOPS[0]);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [offers, setOffers] = useState<Offer[]>(INITIAL_OFFERS);
   const [loyaltyCards, setLoyaltyCards] = useState<LoyaltyCard[]>(INITIAL_LOYALTY_CARDS);
@@ -274,6 +275,9 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     let isMounted = true;
     const syncFromDjango = async () => {
       try {
+        const health = await djangoApi.checkHealth();
+        if (!health.online || !isMounted) return;
+
         const [liveShops, liveOffers, livePosts] = await Promise.all([
           djangoApi.getShops(),
           djangoApi.getOffers(),
@@ -645,8 +649,6 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setOffers((prev) => [newOffer, ...prev]);
     showSnackbar({ message: `New offer "${o.title}" is now live!`, type: 'success' });
   };
-
-  const [ownerShop, setOwnerShop] = useState<Shop>(INITIAL_SHOPS[0]);
 
   const updateOwnerShop = (partial: Partial<Shop>) => {
     setOwnerShop((prev) => {

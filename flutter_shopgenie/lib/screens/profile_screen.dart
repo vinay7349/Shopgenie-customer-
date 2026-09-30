@@ -1,90 +1,107 @@
 import 'package:flutter/material.dart';
+import '../models/user_role.dart';
 import '../theme/app_colors.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final UserRole userRole;
+  final ValueChanged<UserRole> onRoleChanged;
+  final VoidCallback? onBack;
+
+  const ProfileScreen({
+    super.key,
+    required this.userRole,
+    required this.onRoleChanged,
+    this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text(
-          'Genie Account & Wallet',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        title: const Text('Account & Role Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        leading: onBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: onBack,
+              )
+            : null,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // User Card
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+              ),
             ),
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 30,
-                  backgroundColor: AppColors.genieTealContainerLight,
-                  child: Text('🧞', style: TextStyle(fontSize: 30)),
+                  backgroundColor: AppColors.genieTeal.withOpacity(0.15),
+                  child: const Text('VK', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.genieTeal, fontSize: 20)),
                 ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Priya Sharma',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Koramangala 4th Block · Resident',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Vinay Kharvik',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.sparkAmber.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
+                      const SizedBox(height: 2),
+                      Text(
+                        'vinaykharvik09@gmail.com',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
-                      child: const Text(
-                        '⭐ Gold Shopper tier',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFB45309),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.genieTeal.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '⚡ ${userRole.badgeText}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.genieTeal,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 16),
 
-          // Loyalty Card
+          // Role Switcher Card (Multi-Role Deck feature!)
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: userRole == UserRole.admin
+                    ? [const Color(0xFF78350F).withOpacity(0.15), const Color(0xFFB45309).withOpacity(0.1)]
+                    : [AppColors.genieTeal.withOpacity(0.12), AppColors.aiViolet.withOpacity(0.08)],
+              ),
               borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF0F766E),
-                  Color(0xFF0D9488),
-                  Color(0xFF6D5EF5),
-                ],
+              border: Border.all(
+                color: userRole == UserRole.admin ? AppColors.sparkAmber : AppColors.genieTeal.withOpacity(0.4),
               ),
             ),
             child: Column(
@@ -93,84 +110,132 @@ class ProfileScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'GENIE LOYALTY COINS',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          userRole == UserRole.admin ? Icons.admin_panel_settings_rounded : Icons.shopping_bag_rounded,
+                          color: userRole == UserRole.admin ? const Color(0xFFB45309) : AppColors.genieTeal,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Active Workspace Role',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: userRole == UserRole.admin ? const Color(0xFFB45309) : AppColors.genieTeal,
+                          ),
+                        ),
+                      ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Active Pass',
-                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '1,450',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Coins (\$14.50 value)',
-                      style: TextStyle(color: AppColors.sparkAmberLight, fontSize: 13, fontWeight: FontWeight.w600),
+                    Switch.adaptive(
+                      value: userRole == UserRole.admin,
+                      activeColor: AppColors.sparkAmber,
+                      onChanged: (isAdmin) {
+                        onRoleChanged(isAdmin ? UserRole.admin : UserRole.shopper);
+                      },
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Earn 5% coin cashback automatically on all Scan & Go neighbourhood checkouts.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                  userRole == UserRole.admin
+                      ? 'You are viewing the Merchant Console with sales metrics, QR station printer, and live aisle inventory.'
+                      : 'You are viewing the Shopper experience with store map, aisle scanner, flash deals, and self-checkout.',
+                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.7)),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 16),
 
+          // Loyalty Wallet Balance
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.sparkAmber.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.stars_rounded, color: AppColors.sparkAmber, size: 28),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('250 Genie Coins', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('Worth \$2.50 in instant cashback at verified stores', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.genieTeal,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                  ),
+                  child: const Text('Redeem', style: TextStyle(fontSize: 11)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Menu Options
+          _buildMenuTile(Icons.location_on_outlined, 'Saved Addresses & Delivery Zones', 'Indiranagar 100ft Rd, Koramangala 4th Block'),
+          _buildMenuTile(Icons.receipt_long_outlined, 'Self-Checkout Receipt History', '3 digital exit passes available'),
+          _buildMenuTile(Icons.payment_outlined, 'Payment Methods & Fast UPI', 'Google Pay, Apple Pay, Cards linked'),
+          _buildMenuTile(Icons.help_outline_rounded, 'ShopGenie Help & Store Verification', 'FAQ & merchant onboarding guide'),
           const SizedBox(height: 20),
 
-          // Settings list
-          _buildSettingsTile(Icons.receipt_long, 'My Digital Receipts', '14 store trips logged'),
-          _buildSettingsTile(Icons.favorite_border, 'Followed Local Shops', 'GreenLeaf Grocers, Daily Crust'),
-          _buildSettingsTile(Icons.location_on_outlined, 'Saved Addresses', 'Home, Office, Parents'),
-          _buildSettingsTile(Icons.notifications_outlined, 'Neighbourhood Flash Alerts', 'Real-time offer alerts ON'),
-          _buildSettingsTile(Icons.help_outline, 'Genie Support & FAQ', 'Instant assistance'),
+          // Footer
+          const Center(
+            child: Text(
+              'ShopGenie Multi-Role Deck · v1.0.0 (Flutter 3.24)',
+              style: TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSettingsTile(IconData icon, String title, String subtitle) {
+  Widget _buildMenuTile(IconData icon, String title, String subtitle) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.genieTeal),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
-        onTap: () {},
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppColors.genieTeal),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey),
+        ],
       ),
     );
   }

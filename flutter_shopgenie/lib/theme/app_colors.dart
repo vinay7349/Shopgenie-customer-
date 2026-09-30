@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// ShopGenie Brand Palette
+/// ShopGenie Brand Palette matching Multi-Role Deck
 class AppColors {
   AppColors._();
 
@@ -17,9 +17,22 @@ class AppColors {
   static const Color sparkAmberContainerLight = Color(0xFFFEF3C7);
   static const Color sparkAmberContainerDark = Color(0xFF78350F);
 
-  // Tertiary AI Violet (Intelligence & Search)
-  static const Color aiViolet = Color(0xFF6D5EF5);
-  static const Color aiVioletDark = Color(0xFFB4ABFF);
+  // Multi-Role Deck Quick Card Accents
+  static const Color feedBlue = Color(0xFF2563EB);
+  static const Color feedBlueBg = Color(0xFFEFF6FF);
+  static const Color feedBlueBorder = Color(0xFFBFDBFE);
+
+  static const Color offerEmerald = Color(0xFF059669);
+  static const Color offerEmeraldBg = Color(0xFFECFDF5);
+  static const Color offerEmeraldBorder = Color(0xFFA7F3D0);
+
+  static const Color followingRose = Color(0xFFE11D48);
+  static const Color followingRoseBg = Color(0xFFFFF1F2);
+  static const Color followingRoseBorder = Color(0xFFFECDD3);
+
+  static const Color scanIndigo = Color(0xFF4F46E5);
+  static const Color scanIndigoBg = Color(0xFFEEF2FF);
+  static const Color scanIndigoBorder = Color(0xFFC7D2FE);
 
   // Neutrals - Light Mode
   static const Color lightBackground = Color(0xFFF8FAFC);

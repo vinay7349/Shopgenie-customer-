@@ -1,235 +1,372 @@
 import 'package:flutter/material.dart';
+import '../models/cart_item.dart';
 import '../models/store_item.dart';
+import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
 
-class ShopDetailScreen extends StatelessWidget {
+class ShopDetailScreen extends StatefulWidget {
   final StoreItem store;
   final VoidCallback onBack;
   final VoidCallback onStartScan;
+  final Function(CartItem) onAddToCart;
 
   const ShopDetailScreen({
     super.key,
     required this.store,
     required this.onBack,
     required this.onStartScan,
+    required this.onAddToCart,
   });
+
+  @override
+  State<ShopDetailScreen> createState() => _ShopDetailScreenState();
+}
+
+class _ShopDetailScreenState extends State<ShopDetailScreen> {
+  late bool _isFollowing;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFollowing = widget.store.isFollowing;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final storeProducts = ShopService.getProductsForStore(widget.store.id);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: widget.onBack,
         ),
-        title: Text(
-          store.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
+        title: Text(widget.store.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        elevation: 0,
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isFollowing ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: _isFollowing ? Colors.redAccent : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _isFollowing = !_isFollowing;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_isFollowing ? 'Following ${widget.store.name}' : 'Unfollowed'),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Shop link copied to clipboard!')),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(bottom: 90),
         children: [
-          // Store Header Banner Card
+          // Store Banner Card
           Container(
+            color: isDark ? AppColors.darkSurface : Colors.white,
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
-            ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.genieTeal.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(store.emoji, style: const TextStyle(fontSize: 38)),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  store.name,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.Center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${store.category} · ${store.distance}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: theme.colorScheme.onSurface.withOpacity(0.65),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  store.address,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.sparkAmber.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '⭐ ${store.rating} Rating',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFB45309),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
                         color: AppColors.genieTeal.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Text(
-                        '✨ Genie Verified',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.genieTeal,
-                        ),
+                      alignment: Alignment.center,
+                      child: Text(widget.store.emoji, style: const TextStyle(fontSize: 32)),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.store.name,
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              const Icon(Icons.verified_rounded, color: AppColors.genieTeal, size: 18),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${widget.store.category} · ${widget.store.distance}',
+                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.sparkAmber.withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  widget.store.rating,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFB45309),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${widget.store.followers} followers',
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                if (widget.store.description != null) ...[
+                  Text(
+                    widget.store.description!,
+                    style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.75)),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+
+                // Quick metadata
+                Row(
+                  children: [
+                    Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(widget.store.hours, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    const SizedBox(width: 16),
+                    Icon(Icons.phone_outlined, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(widget.store.phone, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   ],
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // Scan & Go CTA Card if selfCheckout enabled
-          if (store.selfCheckout)
+          // Self Checkout Status Ribbon
+          if (widget.store.selfCheckout)
             Container(
-              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
                 gradient: const LinearGradient(
                   colors: [AppColors.genieTeal, Color(0xFF0D9488)],
                 ),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.qr_code_scanner, color: Colors.white, size: 36),
-                  const SizedBox(width: 14),
+                  const Icon(Icons.bolt_rounded, color: AppColors.sparkAmber, size: 28),
+                  const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Self Scan & Go Enabled',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                          'Self-Checkout Station Live',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
-                        SizedBox(height: 2),
                         Text(
-                          'Scan items off shelves and skip checkout queues.',
+                          'Scan items right off the shelf with phone camera',
                           style: TextStyle(color: Colors.white70, fontSize: 11),
                         ),
                       ],
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: onStartScan,
+                    onPressed: widget.onStartScan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.genieTeal,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Start', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Scan Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                   ),
                 ],
               ),
             ),
 
-          const SizedBox(height: 16),
+          // Products Section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Popular Aisle Items',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '${storeProducts.length} items',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
 
-          // Store Description
-          if (store.description != null) ...[
-            Text(
-              'About this Store',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              store.description!,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-                fontSize: 13,
-                height: 1.5,
+          if (storeProducts.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Text(
+                  'Use in-store barcode scanner to add any item from the aisle!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Offers
-          if (store.offer != null) ...[
-            Text(
-              'Active In-Store Offers',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.sparkAmber.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.sparkAmber.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Text('🏷️', style: TextStyle(fontSize: 22)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          store.offer!,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: Color(0xFF92400E),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          'Applied automatically at self-checkout',
-                          style: TextStyle(fontSize: 11, color: Color(0xFFB45309)),
-                        ),
-                      ],
+            )
+          else
+            ...storeProducts.map((p) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.genieTeal.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(p.emoji, style: const TextStyle(fontSize: 24)),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            p.category,
+                            style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(
+                                '\$${p.price.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppColors.genieTeal,
+                                ),
+                              ),
+                              if (p.mrp > p.price) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  '\$${p.mrp.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        widget.onAddToCart(
+                          CartItem(
+                            id: p.id,
+                            storeId: p.storeId,
+                            name: p.name,
+                            price: p.price,
+                            emoji: p.emoji,
+                            barcode: p.barcode,
+                          ),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Added ${p.name} to cart!'),
+                            duration: const Duration(seconds: 1),
+                            backgroundColor: AppColors.genieTeal,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.genieTeal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Add to Bag', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
+      bottomSheet: widget.store.selfCheckout
+          ? Container(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: widget.onStartScan,
+                  icon: const Icon(Icons.qr_code_scanner_rounded),
+                  label: const Text('Launch Self-Checkout Scanner', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.genieTeal,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

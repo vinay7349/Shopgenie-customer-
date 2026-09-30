@@ -326,22 +326,45 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     path: 'flutter_shopgenie/lib/screens/home_screen.dart',
     category: 'flutter',
     language: 'dart',
-    description: 'Converted Home screen with address header, category chips, deal banner, and verified stores',
+    description: 'Multi-Role Deck Shopper Home Screen with Rajarajeshwari Nagar header, search bar, Quick Action cards, and Hero Banner',
     code: `import 'package:flutter/material.dart';
 import '../models/store_item.dart';
+import '../models/user_role.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
+import '../widgets/location_selector_sheet.dart';
 import '../widgets/promo_banner.dart';
+import '../widgets/quick_action_cards.dart';
 import '../widgets/store_card.dart';
 
 class HomeScreen extends StatefulWidget {
+  final String currentLocation;
+  final UserRole userRole;
+  final ValueChanged<String> onLocationChanged;
+  final ValueChanged<UserRole> onRoleChanged;
   final Function(StoreItem) onSelectStore;
   final VoidCallback onOpenScanner;
+  final VoidCallback onOpenMap;
+  final VoidCallback onOpenSearch;
+  final VoidCallback onOpenFeed;
+  final VoidCallback onOpenOffers;
+  final VoidCallback onOpenFollowing;
+  final VoidCallback onOpenProfile;
 
   const HomeScreen({
     super.key,
+    required this.currentLocation,
+    required this.userRole,
+    required this.onLocationChanged,
+    required this.onRoleChanged,
     required this.onSelectStore,
     required this.onOpenScanner,
+    required this.onOpenMap,
+    required this.onOpenSearch,
+    required this.onOpenFeed,
+    required this.onOpenOffers,
+    required this.onOpenFollowing,
+    required this.onOpenProfile,
   });
 
   @override
@@ -349,63 +372,103 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _searchQuery = '';
   String _selectedCategory = 'All';
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final filteredStores = ShopService.filterStores(
       query: _searchQuery,
       category: _selectedCategory,
     );
+    final shortLocation = widget.currentLocation.split(',')[0];
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
-            // Top Bar with Location Selector & Search Field
+            // 1. Sticky Top Bar: Location Selector + Map + Notifications + Profile
             Container(
-              color: theme.colorScheme.surface,
-              padding: const EdgeInsets.all(16),
-              child: Column(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
                         children: [
-                          Text('DELIVERING TO / SHOPPING AT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
-                          Text('📍 Koramangala 4th Block ▾', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          const Icon(Icons.location_on_rounded, size: 15, color: Color(0xFF2563EB)),
+                          const SizedBox(width: 6),
+                          Text(shortLocation, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF64748B)),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: AppColors.genieTeal.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-                        child: const Text('✨ Genie Verified', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.genieTeal)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    decoration: const InputDecoration(
-                      hintText: 'Search groceries, fresh bakes, medicines...',
-                      prefixIcon: Icon(Icons.search),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  IconButton(icon: const Icon(Icons.map_outlined), onPressed: widget.onOpenMap),
+                  IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () {}),
+                  IconButton(icon: const Icon(Icons.person_outline_rounded), onPressed: widget.onOpenProfile),
                 ],
               ),
             ),
-            // Category Chips & Stores List
+            // 2. Sky-Themed Area: Search, Feed/Offers/Following/Scan & Hero Banner
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
                 children: [
-                  PromoBanner(onTap: widget.onOpenScanner),
-                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [const Color(0xFFBAE6FD).withOpacity(0.4), const Color(0xFFF8FAFC)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Find shops near you',
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            suffixIcon: IconButton(icon: const Icon(Icons.explore_outlined, color: Color(0xFF2563EB)), onPressed: widget.onOpenMap),
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        QuickActionCards(
+                          onFeedTap: widget.onOpenFeed,
+                          onOffersTap: widget.onOpenOffers,
+                          onFollowingTap: widget.onOpenFollowing,
+                          onScanTap: widget.onOpenScanner,
+                        ),
+                        const SizedBox(height: 8),
+                        PromoBanner(onTap: widget.onOpenOffers, onExploreMap: widget.onOpenMap),
+                      ],
+                    ),
+                  ),
+                  // 3. Nearby Stores & Verified Shops List
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('Nearby Stores', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                        Text('See all →', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                      ],
+                    ),
+                  ),
                   ...filteredStores.map((s) => StoreCard(store: s, onTap: () => widget.onSelectStore(s))),
                 ],
               ),

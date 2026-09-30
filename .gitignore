@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+android-sdk/
+.gradle/
+.idea/
+*.apk
+*.aab
+local.properties
+.dart_tool/
+venv/
+**/venv/
+__pycache__/
+*.pyc

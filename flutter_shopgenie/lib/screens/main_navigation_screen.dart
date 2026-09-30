@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../models/store_item.dart';
-import '../theme/app_colors.dart';
+import '../models/user_role.dart';
+import '../services/shop_service.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
+import 'admin_dashboard_screen.dart';
 import 'bag_screen.dart';
+import 'feed_screen.dart';
 import 'home_screen.dart';
+import 'map_screen.dart';
 import 'profile_screen.dart';
 import 'scan_screen.dart';
 import 'shop_detail_screen.dart';
+import 'search_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -16,8 +22,13 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
+  UserRole _userRole = UserRole.shopper;
+  int _currentTab = 0; // 0: Home, 1: Map, 2: Scan & Pay, 3: Search, 4: Cart
+  String _currentLocation = 'Rajarajeshwari Nagar, Bengaluru';
   StoreItem? _selectedStore;
+  int? _activeFeedTab; // null if not in feed, 0: Feed, 1: Offers, 2: Following
+  bool _isProfileOpen = false;
+
   final List<CartItem> _cartItems = [
     CartItem(
       id: 'p1',
@@ -39,28 +50,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ),
   ];
 
-  int get _cartItemCount =>
-      _cartItems.fold(0, (sum, item) => sum + item.quantity);
+  int get _cartCount => _cartItems.fold(0, (sum, i) => sum + i.quantity);
 
-  void _onAddScannedItem(CartItem newItem) {
+  void _onAddToCart(CartItem newItem) {
     setState(() {
-      final existingIndex =
-          _cartItems.indexWhere((element) => element.barcode == newItem.barcode);
-      if (existingIndex >= 0) {
-        _cartItems[existingIndex].quantity += 1;
+      final idx = _cartItems.indexWhere((i) => i.id == newItem.id || i.barcode == newItem.barcode);
+      if (idx >= 0) {
+        _cartItems[idx].quantity += 1;
       } else {
         _cartItems.add(newItem);
       }
     });
   }
 
-  void _incrementQuantity(CartItem item) {
+  void _incrementCartItem(CartItem item) {
     setState(() {
       item.quantity += 1;
     });
   }
 
-  void _decrementQuantity(CartItem item) {
+  void _decrementCartItem(CartItem item) {
     setState(() {
       if (item.quantity > 1) {
         item.quantity -= 1;
@@ -78,12 +87,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // 1. Role System: If Admin Mode is active, render Merchant Deck
+    if (_userRole == UserRole.admin) {
+      return AdminDashboardScreen(
+        onSwitchRole: (newRole) {
+          setState(() {
+            _userRole = newRole;
+          });
+        },
+      );
+    }
 
-    // If a store is selected in Explore tab, show ShopDetailScreen
-    Widget currentTabWidget;
-    if (_currentIndex == 0 && _selectedStore != null) {
-      currentTabWidget = ShopDetailScreen(
+    // 2. Shopper Sub-screens overlay (Shop Detail, Feed/Offers/Following, Profile)
+    if (_selectedStore != null) {
+      return ShopDetailScreen(
         store: _selectedStore!,
         onBack: () {
           setState(() {
@@ -93,88 +110,182 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onStartScan: () {
           setState(() {
             _selectedStore = null;
-            _currentIndex = 1; // switch to Scan tab
+            _currentTab = 2; // switch to Scan & Pay
+          });
+        },
+        onAddToCart: _onAddToCart,
+      );
+    }
+
+    if (_activeFeedTab != null) {
+      return Scaffold(
+        body: FeedScreen(
+          initialTabIndex: _activeFeedTab!,
+          onSelectStore: (store) {
+            setState(() {
+              _activeFeedTab = null;
+              _selectedStore = store;
+            });
+          },
+        ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: _currentTab,
+          cartCount: _cartCount,
+          onTabSelected: (tab) {
+            setState(() {
+              _activeFeedTab = null;
+              _currentTab = tab;
+            });
+          },
+        ),
+      );
+    }
+
+    if (_isProfileOpen) {
+      return ProfileScreen(
+        userRole: _userRole,
+        onRoleChanged: (role) {
+          setState(() {
+            _userRole = role;
+          });
+        },
+        onBack: () {
+          setState(() {
+            _isProfileOpen = false;
           });
         },
       );
-    } else {
-      switch (_currentIndex) {
-        case 0:
-          currentTabWidget = HomeScreen(
-            onSelectStore: (store) {
-              setState(() {
-                _selectedStore = store;
-              });
-            },
-            onOpenScanner: () {
-              setState(() {
-                _currentIndex = 1;
-              });
-            },
-          );
-          break;
-        case 1:
-          currentTabWidget = ScanScreen(
-            onProductScanned: _onAddScannedItem,
-          );
-          break;
-        case 2:
-          currentTabWidget = BagScreen(
-            cartItems: _cartItems,
-            onIncrement: _incrementQuantity,
-            onDecrement: _decrementQuantity,
-            onClearCart: _clearCart,
-            onGoToScan: () {
-              setState(() {
-                _currentIndex = 1;
-              });
-            },
-          );
-          break;
-        case 3:
-          currentTabWidget = const ProfileScreen();
-          break;
-        default:
-          currentTabWidget = HomeScreen(
-            onSelectStore: (store) {},
-            onOpenScanner: () {},
-          );
-      }
+    }
+
+    // 3. Main 5-Tab Shopper View
+    Widget bodyContent;
+    switch (_currentTab) {
+      case 0:
+        bodyContent = HomeScreen(
+          currentLocation: _currentLocation,
+          userRole: _userRole,
+          onLocationChanged: (newLoc) {
+            setState(() {
+              _currentLocation = newLoc;
+            });
+          },
+          onRoleChanged: (newRole) {
+            setState(() {
+              _userRole = newRole;
+            });
+          },
+          onSelectStore: (store) {
+            setState(() {
+              _selectedStore = store;
+            });
+          },
+          onOpenScanner: () {
+            setState(() {
+              _currentTab = 2;
+            });
+          },
+          onOpenMap: () {
+            setState(() {
+              _currentTab = 1;
+            });
+          },
+          onOpenSearch: () {
+            setState(() {
+              _currentTab = 3;
+            });
+          },
+          onOpenFeed: () {
+            setState(() {
+              _activeFeedTab = 0;
+            });
+          },
+          onOpenOffers: () {
+            setState(() {
+              _activeFeedTab = 1;
+            });
+          },
+          onOpenFollowing: () {
+            setState(() {
+              _activeFeedTab = 2;
+            });
+          },
+          onOpenProfile: () {
+            setState(() {
+              _isProfileOpen = true;
+            });
+          },
+        );
+        break;
+
+      case 1:
+        bodyContent = MapScreen(
+          currentLocation: _currentLocation,
+          onSelectStore: (store) {
+            setState(() {
+              _selectedStore = store;
+            });
+          },
+          onOpenScanner: () {
+            setState(() {
+              _currentTab = 2;
+            });
+          },
+        );
+        break;
+
+      case 2:
+        bodyContent = ScanScreen(
+          onProductScanned: _onAddToCart,
+          onGoToCart: () {
+            setState(() {
+              _currentTab = 4;
+            });
+          },
+        );
+        break;
+
+      case 3:
+        bodyContent = SearchScreen(
+          onSelectStore: (store) {
+            setState(() {
+              _selectedStore = store;
+            });
+          },
+          onAddToCart: _onAddToCart,
+        );
+        break;
+
+      case 4:
+        bodyContent = BagScreen(
+          cartItems: _cartItems,
+          onIncrement: _incrementCartItem,
+          onDecrement: _decrementCartItem,
+          onClearCart: _clearCart,
+          onGoToScan: () {
+            setState(() {
+              _currentTab = 2;
+            });
+          },
+        );
+        break;
+
+      default:
+        bodyContent = const SizedBox.shrink();
     }
 
     return Scaffold(
-      body: currentTabWidget,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (idx) {
+      body: bodyContent,
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _currentTab,
+        cartCount: _cartCount,
+        onTabSelected: (tab) {
           setState(() {
-            _currentIndex = idx;
             _selectedStore = null;
+            _activeFeedTab = null;
+            _isProfileOpen = false;
+            _currentTab = tab;
           });
         },
-        destinations: [
-          const NavigationDestination(
-            icon: Text('🏠', style: TextStyle(fontSize: 20)),
-            label: 'Explore',
-          ),
-          const NavigationDestination(
-            icon: Text('📱', style: TextStyle(fontSize: 20)),
-            label: 'Scan & Go',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: _cartItemCount > 0,
-              label: Text('$_cartItemCount'),
-              backgroundColor: AppColors.genieTeal,
-              child: const Text('🛍️', style: TextStyle(fontSize: 20)),
-            ),
-            label: 'Bag',
-          ),
-          const NavigationDestination(
-            icon: Text('👤', style: TextStyle(fontSize: 20)),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
