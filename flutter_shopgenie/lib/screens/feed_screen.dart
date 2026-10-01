@@ -136,7 +136,7 @@ class _FeedScreenState extends State<FeedScreen>
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: AppColors.genieTeal.withOpacity(0.1),
+                      color: AppColors.genieTeal.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,
@@ -161,7 +161,7 @@ class _FeedScreenState extends State<FeedScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.feedBlue.withOpacity(0.1),
+                      color: AppColors.feedBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -183,12 +183,12 @@ class _FeedScreenState extends State<FeedScreen>
               const SizedBox(height: 6),
               Text(
                 post['content'] as String,
-                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.75)),
+                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withValues(alpha: 0.75)),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.favorite_rounded, size: 16, color: AppColors.followingRose),
+                  const Icon(Icons.favorite_rounded, size: 16, color: AppColors.followingRose),
                   const SizedBox(width: 4),
                   Text('${post['likes']} Neighbours liked this', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ],
@@ -228,7 +228,7 @@ class _FeedScreenState extends State<FeedScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.offerEmerald.withOpacity(0.12),
+                      color: AppColors.offerEmerald.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -254,7 +254,7 @@ class _FeedScreenState extends State<FeedScreen>
               const SizedBox(height: 4),
               Text(
                 offer.description,
-                style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 12),
               Row(

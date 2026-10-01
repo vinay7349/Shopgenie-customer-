@@ -77,8 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB), size: 22),
                     SizedBox(width: 8),
                     Text(
@@ -101,8 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFDBEAFE)),
               ),
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Text('🎉', style: TextStyle(fontSize: 20)),
                   SizedBox(width: 10),
                   Expanded(
@@ -122,8 +122,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Text('⚡', style: TextStyle(fontSize: 20)),
                   SizedBox(width: 10),
                   Expanded(
@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: isDark ? AppColors.darkSurface : Colors.white,
                 border: Border(
                   bottom: BorderSide(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0).withOpacity(0.7),
+                    color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0).withValues(alpha: 0.7),
                     width: 1,
                   ),
                 ),
@@ -242,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           ),
@@ -274,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           ),
@@ -323,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           ),
@@ -357,8 +357,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 AppColors.darkBackground,
                               ]
                             : [
-                                const Color(0xFFBAE6FD).withOpacity(0.40),
-                                const Color(0xFFE0F2FE).withOpacity(0.25),
+                                const Color(0xFFBAE6FD).withValues(alpha: 0.40),
+                                const Color(0xFFE0F2FE).withValues(alpha: 0.25),
                                 const Color(0xFFF8FAFC),
                               ],
                         begin: Alignment.topCenter,
@@ -381,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
+                                  color: Colors.black.withValues(alpha: 0.04),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -477,8 +477,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         InkWell(
                           onTap: widget.onOpenMap,
-                          child: Row(
-                            children: const [
+                          child: const Row(
+                            children: [
                               Text(
                                 'See all',
                                 style: TextStyle(

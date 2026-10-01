@@ -24,7 +24,7 @@ class StoreCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder.withOpacity(0.6),
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder.withValues(alpha: 0.6),
           width: 1,
         ),
       ),
@@ -40,7 +40,7 @@ class StoreCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.genieTeal.withOpacity(0.12),
+                  color: AppColors.genieTeal.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
@@ -75,7 +75,7 @@ class StoreCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.sparkAmber.withOpacity(0.15),
+                            color: AppColors.sparkAmber.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -95,7 +95,7 @@ class StoreCard extends StatelessWidget {
                       '${store.category} · ${store.distance}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 12,
-                        color: theme.colorScheme.onSurface.withOpacity(0.65),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -104,7 +104,7 @@ class StoreCard extends StatelessWidget {
                       store.address,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 11,
-                        color: theme.colorScheme.onSurface.withOpacity(0.45),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                       ),
                     ),
 
@@ -113,7 +113,7 @@ class StoreCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.sparkAmber.withOpacity(0.15),
+                          color: AppColors.sparkAmber.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

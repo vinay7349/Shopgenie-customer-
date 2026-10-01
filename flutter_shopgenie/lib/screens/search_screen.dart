@@ -116,11 +116,11 @@ class _SearchScreenState extends State<SearchScreen> {
                           _selfCheckoutOnly = val;
                         });
                       },
-                      selectedColor: AppColors.genieTeal.withOpacity(0.18),
+                      selectedColor: AppColors.genieTeal.withValues(alpha: 0.18),
                       checkmarkColor: AppColors.genieTeal,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       side: BorderSide(
-                        color: _selfCheckoutOnly ? AppColors.genieTeal : Colors.grey.withOpacity(0.3),
+                        color: _selfCheckoutOnly ? AppColors.genieTeal : Colors.grey.withValues(alpha: 0.3),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -175,7 +175,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.8,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -232,7 +232,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 8),

@@ -93,7 +93,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: AppColors.genieTeal.withOpacity(0.12),
+                        color: AppColors.genieTeal.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.center,
@@ -126,7 +126,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.sparkAmber.withOpacity(0.18),
+                                  color: AppColors.sparkAmber.withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -155,7 +155,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 if (widget.store.description != null) ...[
                   Text(
                     widget.store.description!,
-                    style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.75)),
+                    style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withValues(alpha: 0.75)),
                   ),
                   const SizedBox(height: 14),
                 ],
@@ -266,7 +266,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.genieTeal.withOpacity(0.08),
+                        color: AppColors.genieTeal.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,

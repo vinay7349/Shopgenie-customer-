@@ -99,7 +99,7 @@ class QuickActionCards extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -112,7 +112,7 @@ class QuickActionCards extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isDark ? iconColor.withOpacity(0.18) : iconBgColor,
+                color: isDark ? iconColor.withValues(alpha: 0.18) : iconBgColor,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(

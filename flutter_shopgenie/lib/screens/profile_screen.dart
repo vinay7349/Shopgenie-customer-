@@ -53,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: AppColors.genieTeal.withOpacity(0.15),
+                  backgroundColor: AppColors.genieTeal.withValues(alpha: 0.15),
                   child: const Text('VK', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.genieTeal, fontSize: 20)),
                 ),
                 const SizedBox(width: 16),
@@ -74,7 +74,7 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.genieTeal.withOpacity(0.1),
+                          color: AppColors.genieTeal.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -114,7 +114,7 @@ class ProfileScreen extends StatelessWidget {
                 Text(
                   'Choose how ShopGenie looks on this device.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -156,12 +156,12 @@ class ProfileScreen extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: userRole == UserRole.admin
-                    ? [const Color(0xFF78350F).withOpacity(0.15), const Color(0xFFB45309).withOpacity(0.1)]
-                    : [AppColors.genieTeal.withOpacity(0.12), AppColors.aiViolet.withOpacity(0.08)],
+                    ? [const Color(0xFF78350F).withValues(alpha: 0.15), const Color(0xFFB45309).withValues(alpha: 0.1)]
+                    : [AppColors.genieTeal.withValues(alpha: 0.12), AppColors.aiViolet.withValues(alpha: 0.08)],
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: userRole == UserRole.admin ? AppColors.sparkAmber : AppColors.genieTeal.withOpacity(0.4),
+                color: userRole == UserRole.admin ? AppColors.sparkAmber : AppColors.genieTeal.withValues(alpha: 0.4),
               ),
             ),
             child: Column(
@@ -190,7 +190,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     Switch.adaptive(
                       value: userRole == UserRole.admin,
-                      activeColor: AppColors.sparkAmber,
+                      activeThumbColor: AppColors.sparkAmber,
                       onChanged: (isAdmin) {
                         onRoleChanged(isAdmin ? UserRole.admin : UserRole.shopper);
                       },
@@ -202,7 +202,7 @@ class ProfileScreen extends StatelessWidget {
                   userRole == UserRole.admin
                       ? 'You are viewing the Merchant Console with sales metrics, QR station printer, and live aisle inventory.'
                       : 'You are viewing the Shopper experience with store map, aisle scanner, flash deals, and self-checkout.',
-                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                 ),
               ],
             ),
@@ -222,7 +222,7 @@ class ProfileScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.sparkAmber.withOpacity(0.15),
+                    color: AppColors.sparkAmber.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.stars_rounded, color: AppColors.sparkAmber, size: 28),
@@ -298,7 +298,7 @@ class ProfileScreen extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 11,
-                    color: theme.colorScheme.onSurface.withOpacity(0.65),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                   ),
                 ),
               ],

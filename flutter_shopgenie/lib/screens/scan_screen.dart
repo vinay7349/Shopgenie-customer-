@@ -22,7 +22,6 @@ class _ScanScreenState extends State<ScanScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _laserController;
   bool _torchOn = false;
-  ProductItem? _detectedProduct;
   final TextEditingController _manualCodeController = TextEditingController();
 
   @override
@@ -42,10 +41,6 @@ class _ScanScreenState extends State<ScanScreen>
   }
 
   void _handleSimulateScan(ProductItem product) {
-    setState(() {
-      _detectedProduct = product;
-    });
-
     final cartItem = CartItem(
       id: product.id,
       storeId: product.storeId,
@@ -156,7 +151,7 @@ class _ScanScreenState extends State<ScanScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
@@ -207,7 +202,7 @@ class _ScanScreenState extends State<ScanScreen>
                   width: 280,
                   height: 280,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
+                    color: Colors.white.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: _torchOn ? Colors.white70 : Colors.white24,
@@ -241,7 +236,7 @@ class _ScanScreenState extends State<ScanScreen>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.sparkAmber.withOpacity(0.8),
+                                    color: AppColors.sparkAmber.withValues(alpha: 0.8),
                                     blurRadius: 8,
                                     spreadRadius: 1,
                                   ),
@@ -260,13 +255,13 @@ class _ScanScreenState extends State<ScanScreen>
                             Icon(
                               Icons.qr_code_scanner_rounded,
                               size: 40,
-                              color: Colors.white.withOpacity(0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                             ),
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.6),
+                                color: Colors.black.withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text(
@@ -345,7 +340,7 @@ class _ScanScreenState extends State<ScanScreen>
                                 color: const Color(0xFF1E2825),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.08),
+                                  color: Colors.white.withValues(alpha: 0.08),
                                 ),
                               ),
                               child: Row(

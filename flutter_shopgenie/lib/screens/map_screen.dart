@@ -68,7 +68,7 @@ class _MapScreenState extends State<MapScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.genieTeal.withOpacity(0.18),
+                              color: AppColors.genieTeal.withValues(alpha: 0.18),
                               width: 1.5,
                             ),
                           ),
@@ -81,7 +81,7 @@ class _MapScreenState extends State<MapScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.genieTeal.withOpacity(0.28),
+                              color: AppColors.genieTeal.withValues(alpha: 0.28),
                               width: 1.5,
                             ),
                           ),
@@ -100,7 +100,7 @@ class _MapScreenState extends State<MapScreen> {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.blue.withOpacity(0.4),
+                                    color: Colors.blue.withValues(alpha: 0.4),
                                     blurRadius: 12,
                                     spreadRadius: 3,
                                   ),
@@ -121,7 +121,7 @@ class _MapScreenState extends State<MapScreen> {
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 4,
                                   ),
                                 ],
@@ -185,7 +185,7 @@ class _MapScreenState extends State<MapScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: Colors.black.withValues(alpha: 0.08),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
@@ -214,7 +214,7 @@ class _MapScreenState extends State<MapScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.genieTeal.withOpacity(0.12),
+                            color: AppColors.genieTeal.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -256,7 +256,7 @@ class _MapScreenState extends State<MapScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 4,
                                 ),
                               ],
@@ -298,7 +298,7 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
+                        color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -313,7 +313,7 @@ class _MapScreenState extends State<MapScreen> {
                             width: 52,
                             height: 52,
                             decoration: BoxDecoration(
-                              color: AppColors.genieTeal.withOpacity(0.12),
+                              color: AppColors.genieTeal.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             alignment: Alignment.center,
@@ -342,7 +342,7 @@ class _MapScreenState extends State<MapScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppColors.sparkAmber.withOpacity(0.15),
+                                        color: AppColors.sparkAmber.withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
@@ -361,7 +361,7 @@ class _MapScreenState extends State<MapScreen> {
                                   '${_selectedStore!.category} · ${_selectedStore!.distance}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: theme.colorScheme.onSurface.withOpacity(0.65),
+                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -369,7 +369,7 @@ class _MapScreenState extends State<MapScreen> {
                                   _selectedStore!.address,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: theme.colorScheme.onSurface.withOpacity(0.45),
+                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -456,7 +456,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
+                    color: Colors.black.withValues(alpha: 0.18),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -505,7 +505,7 @@ class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)
+      ..color = isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04)
       ..strokeWidth = 1.0;
 
     const step = 40.0;

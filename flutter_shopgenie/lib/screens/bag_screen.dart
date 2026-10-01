@@ -77,7 +77,7 @@ class _BagScreenState extends State<BagScreen> {
                 // Store Verification Banner
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: AppColors.genieTeal.withOpacity(0.08),
+                  color: AppColors.genieTeal.withValues(alpha: 0.08),
                   child: const Row(
                     children: [
                       Icon(Icons.verified_rounded, size: 16, color: AppColors.genieTeal),
@@ -114,7 +114,7 @@ class _BagScreenState extends State<BagScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 6,
                             ),
                           ],
@@ -126,7 +126,7 @@ class _BagScreenState extends State<BagScreen> {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: AppColors.genieTeal.withOpacity(0.1),
+                                color: AppColors.genieTeal.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               alignment: Alignment.center,
@@ -153,14 +153,14 @@ class _BagScreenState extends State<BagScreen> {
                                     '\$${item.price.toStringAsFixed(2)} each',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                                     ),
                                   ),
                                   Text(
                                     'Barcode: ${item.barcode}',
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                                     ),
                                   ),
                                 ],
@@ -212,7 +212,7 @@ class _BagScreenState extends State<BagScreen> {
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 12,
                         offset: const Offset(0, -4),
                       ),
@@ -315,7 +315,7 @@ class _BagScreenState extends State<BagScreen> {
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.genieTeal.withOpacity(0.1),
+                color: AppColors.genieTeal.withValues(alpha: 0.1),
               ),
               child: const Icon(
                 Icons.shopping_bag_outlined,
@@ -384,7 +384,7 @@ class _BagScreenState extends State<BagScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.genieTeal.withOpacity(0.3),
+                      color: AppColors.genieTeal.withValues(alpha: 0.3),
                       blurRadius: 20,
                       spreadRadius: 4,
                     ),

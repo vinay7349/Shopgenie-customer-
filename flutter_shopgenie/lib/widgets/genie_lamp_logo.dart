@@ -29,7 +29,7 @@ class GenieLampLogo extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.genieTeal.withOpacity(0.35),
+            color: AppColors.genieTeal.withValues(alpha: 0.35),
             blurRadius: size * 0.25,
             spreadRadius: 2,
           ),
@@ -103,7 +103,7 @@ class _GenieLampPainter extends CustomPainter {
 
     // Sparkle 2 (Minor sparkle)
     final sparklePaint2 = Paint()
-      ..color = AppColors.sparkAmber.withOpacity(0.9)
+      ..color = AppColors.sparkAmber.withValues(alpha: 0.9)
       ..style = PaintingStyle.fill;
 
     final sp2 = Path();

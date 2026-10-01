@@ -18,9 +18,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
-  late Animation<double> _scaleAnimation;
   late Animation<double> _glowAnimation;
-  late Animation<double> _fadeAnimation;
 
   String _statusText = 'Initializing ShopGenie...';
   Timer? _sequenceTimer1;
@@ -38,24 +36,10 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
-      ),
-    );
-
     _glowAnimation = Tween<double>(begin: 0.95, end: 1.08).animate(
       CurvedAnimation(
         parent: _pulseController,
         curve: Curves.fastOutSlowIn,
-      ),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       ),
     );
 
@@ -130,8 +114,8 @@ class _SplashScreenState extends State<SplashScreen>
                 child: CustomPaint(
                   painter: _RadialGlowPainter(
                     color: isDark
-                        ? AppColors.genieTeal.withOpacity(0.18)
-                        : AppColors.genieTeal.withOpacity(0.08),
+                        ? AppColors.genieTeal.withValues(alpha: 0.18)
+                        : AppColors.genieTeal.withValues(alpha: 0.08),
                   ),
                 ),
               ),
@@ -197,7 +181,7 @@ class _SplashScreenState extends State<SplashScreen>
                         style: theme.textTheme.bodyLarge?.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface.withOpacity(0.72),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -225,7 +209,7 @@ class _SplashScreenState extends State<SplashScreen>
                           key: ValueKey(_statusText),
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 12,
-                            color: theme.colorScheme.onSurface.withOpacity(0.55),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -246,7 +230,7 @@ class _SplashScreenState extends State<SplashScreen>
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withOpacity(0.45),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -271,7 +255,7 @@ class _RadialGlowPainter extends CustomPainter {
       ..shader = RadialGradient(
         colors: [
           color,
-          AppColors.aiViolet.withOpacity(0.04),
+          AppColors.aiViolet.withValues(alpha: 0.04),
           Colors.transparent,
         ],
       ).createShader(Rect.fromCircle(center: center, radius: size.width * 0.75));

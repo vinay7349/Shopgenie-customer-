@@ -65,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         'Skip',
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -96,10 +96,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: 200,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(32),
-                            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -110,8 +110,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               borderRadius: BorderRadius.circular(32),
                               gradient: RadialGradient(
                                 colors: [
-                                  AppColors.genieTeal.withOpacity(0.15),
-                                  AppColors.sparkAmber.withOpacity(0.08),
+                                  AppColors.genieTeal.withValues(alpha: 0.15),
+                                  AppColors.sparkAmber.withValues(alpha: 0.08),
                                   Colors.transparent,
                                 ],
                               ),
@@ -130,7 +130,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.genieTeal.withOpacity(0.12),
+                            color: AppColors.genieTeal.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -166,7 +166,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 15,
                               height: 1.45,
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -195,7 +195,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           decoration: BoxDecoration(
                             color: isCurrent
                                 ? AppColors.genieTeal
-                                : theme.colorScheme.onSurface.withOpacity(0.2),
+                                : theme.colorScheme.onSurface.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         );

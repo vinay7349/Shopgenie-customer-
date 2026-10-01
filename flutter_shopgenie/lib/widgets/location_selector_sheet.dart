@@ -81,7 +81,7 @@ class LocationSelectorSheet extends StatelessWidget {
                     'ShopGenie searches verified shops nearby',
                     style: TextStyle(
                       fontSize: 12,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -104,10 +104,10 @@ class LocationSelectorSheet extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.genieTeal.withOpacity(0.08),
+                color: AppColors.genieTeal.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppColors.genieTeal.withOpacity(0.3),
+                  color: AppColors.genieTeal.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -141,7 +141,7 @@ class LocationSelectorSheet extends StatelessWidget {
                           'Automatically detects neighbourhood shops',
                           style: TextStyle(
                             fontSize: 11,
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -159,7 +159,7 @@ class LocationSelectorSheet extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 8),

@@ -23,13 +23,13 @@ class CustomBottomNavBar extends StatelessWidget {
         color: isDark ? AppColors.darkSurface : Colors.white,
         border: Border(
           top: BorderSide(
-            color: isDark ? AppColors.darkBorder : Colors.grey.withOpacity(0.2),
+            color: isDark ? AppColors.darkBorder : Colors.grey.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -3),
           ),
@@ -94,13 +94,13 @@ class CustomBottomNavBar extends StatelessWidget {
     int badgeCount = 0,
   }) {
     final isSelected = currentIndex == index;
-    final selectedColor = AppColors.genieTeal;
+    const selectedColor = AppColors.genieTeal;
     final unselectedColor = Colors.grey[600];
 
     return Expanded(
       child: InkWell(
         onTap: () => onTabSelected(index),
-        splashColor: AppColors.genieTeal.withOpacity(0.1),
+        splashColor: AppColors.genieTeal.withValues(alpha: 0.1),
         highlightColor: Colors.transparent,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -199,7 +199,7 @@ class CustomBottomNavBar extends StatelessWidget {
                   boxShadow: [
                     BoxShadow(
                       color: (isSelected ? AppColors.sparkAmber : AppColors.genieTeal)
-                          .withOpacity(0.35),
+                          .withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),

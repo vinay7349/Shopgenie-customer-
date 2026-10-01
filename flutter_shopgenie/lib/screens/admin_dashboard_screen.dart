@@ -156,7 +156,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.sparkAmber.withOpacity(0.2),
+                color: AppColors.sparkAmber.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.storefront_rounded, color: AppColors.sparkAmber, size: 20),
@@ -218,7 +218,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
                 Switch.adaptive(
                   value: _isStoreOpen,
-                  activeColor: AppColors.genieTeal,
+                  activeThumbColor: AppColors.genieTeal,
                   onChanged: (val) {
                     setState(() {
                       _isStoreOpen = val;
@@ -362,7 +362,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: item.inStock ? Colors.green.withOpacity(0.12) : Colors.red.withOpacity(0.12),
+                      color: item.inStock ? Colors.green.withValues(alpha: 0.12) : Colors.red.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
