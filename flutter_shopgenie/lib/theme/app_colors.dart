@@ -17,6 +17,10 @@ class AppColors {
   static const Color sparkAmberContainerLight = Color(0xFFFEF3C7);
   static const Color sparkAmberContainerDark = Color(0xFF78350F);
 
+  // Tertiary violet accent used for genie artwork and highlights.
+  static const Color aiViolet = Color(0xFF7C3AED);
+  static const Color aiVioletDark = Color(0xFFA78BFA);
+
   // Multi-Role Deck Quick Card Accents
   static const Color feedBlue = Color(0xFF2563EB);
   static const Color feedBlueBg = Color(0xFFEFF6FF);

@@ -161,7 +161,6 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // 1. Sticky Multi-Role Deck Top Bar: Location Selector + Map Icon + Notifications + Profile
             Container(
-              color: isDark ? AppColors.darkSurface : Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkSurface : Colors.white,

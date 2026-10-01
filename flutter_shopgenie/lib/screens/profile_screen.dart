@@ -5,12 +5,16 @@ import '../theme/app_colors.dart';
 class ProfileScreen extends StatelessWidget {
   final UserRole userRole;
   final ValueChanged<UserRole> onRoleChanged;
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
   final VoidCallback? onBack;
 
   const ProfileScreen({
     super.key,
     required this.userRole,
     required this.onRoleChanged,
+    required this.themeMode,
+    required this.onThemeModeChanged,
     this.onBack,
   });
 
@@ -83,6 +87,62 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Appearance',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Choose how ShopGenie looks on this device.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<ThemeMode>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: Icon(Icons.brightness_auto_rounded),
+                        label: Text('System'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: Icon(Icons.light_mode_rounded),
+                        label: Text('Light'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: Icon(Icons.dark_mode_rounded),
+                        label: Text('Dark'),
+                      ),
+                    ],
+                    selected: {themeMode},
+                    onSelectionChanged: (selection) {
+                      onThemeModeChanged(selection.first);
+                    },
                   ),
                 ),
               ],
@@ -194,10 +254,10 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Menu Options
-          _buildMenuTile(Icons.location_on_outlined, 'Saved Addresses & Delivery Zones', 'Indiranagar 100ft Rd, Koramangala 4th Block'),
-          _buildMenuTile(Icons.receipt_long_outlined, 'Self-Checkout Receipt History', '3 digital exit passes available'),
-          _buildMenuTile(Icons.payment_outlined, 'Payment Methods & Fast UPI', 'Google Pay, Apple Pay, Cards linked'),
-          _buildMenuTile(Icons.help_outline_rounded, 'ShopGenie Help & Store Verification', 'FAQ & merchant onboarding guide'),
+          _buildMenuTile(context, Icons.location_on_outlined, 'Saved Addresses & Delivery Zones', 'Indiranagar 100ft Rd, Koramangala 4th Block'),
+          _buildMenuTile(context, Icons.receipt_long_outlined, 'Self-Checkout Receipt History', '3 digital exit passes available'),
+          _buildMenuTile(context, Icons.payment_outlined, 'Payment Methods & Fast UPI', 'Google Pay, Apple Pay, Cards linked'),
+          _buildMenuTile(context, Icons.help_outline_rounded, 'ShopGenie Help & Store Verification', 'FAQ & merchant onboarding guide'),
           const SizedBox(height: 20),
 
           // Footer
@@ -212,14 +272,18 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title, String subtitle) {
+  Widget _buildMenuTile(BuildContext context, IconData icon, String title, String subtitle) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Row(
         children: [
@@ -230,7 +294,13 @@ class ProfileScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface.withOpacity(0.65),
+                  ),
+                ),
               ],
             ),
           ),

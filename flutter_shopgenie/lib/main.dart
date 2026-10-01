@@ -3,10 +3,22 @@ import 'screens/main_navigation_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ShopGenieApp());
+  final preferences = SharedPreferencesAsync();
+  var initialThemeMode = ThemeMode.system;
+  try {
+    final savedMode = await preferences.getString('theme_mode');
+    initialThemeMode = ThemeMode.values.firstWhere(
+      (mode) => mode.name == savedMode,
+      orElse: () => ThemeMode.system,
+    );
+  } catch (_) {
+    // Keep the app usable with the system theme if preferences are unavailable.
+  }
+  runApp(ShopGenieApp(initialThemeMode: initialThemeMode));
 }
 
 enum AppFlowState {
@@ -16,7 +28,9 @@ enum AppFlowState {
 }
 
 class ShopGenieApp extends StatefulWidget {
-  const ShopGenieApp({super.key});
+  final ThemeMode initialThemeMode;
+
+  const ShopGenieApp({super.key, required this.initialThemeMode});
 
   @override
   State<ShopGenieApp> createState() => _ShopGenieAppState();
@@ -24,6 +38,22 @@ class ShopGenieApp extends StatefulWidget {
 
 class _ShopGenieAppState extends State<ShopGenieApp> {
   AppFlowState _flowState = AppFlowState.splash;
+  late ThemeMode _themeMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeMode = widget.initialThemeMode;
+  }
+
+  Future<void> _setThemeMode(ThemeMode mode) async {
+    setState(() => _themeMode = mode);
+    try {
+      await SharedPreferencesAsync().setString('theme_mode', mode.name);
+    } catch (_) {
+      // The selected mode still applies for this session if saving fails.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +62,7 @@ class _ShopGenieAppState extends State<ShopGenieApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: _themeMode,
       home: AnimatedSwitcher(
         duration: const Duration(milliseconds: 350),
         switchInCurve: Curves.easeIn,
@@ -63,8 +93,10 @@ class _ShopGenieAppState extends State<ShopGenieApp> {
           },
         );
       case AppFlowState.main:
-        return const MainNavigationScreen(
-          key: ValueKey('main_navigation_screen'),
+        return MainNavigationScreen(
+          key: const ValueKey('main_navigation_screen'),
+          themeMode: _themeMode,
+          onThemeModeChanged: _setThemeMode,
         );
     }
   }

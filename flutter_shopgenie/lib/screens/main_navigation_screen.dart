@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../models/store_item.dart';
 import '../models/user_role.dart';
-import '../services/shop_service.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'admin_dashboard_screen.dart';
 import 'bag_screen.dart';
@@ -15,7 +14,14 @@ import 'shop_detail_screen.dart';
 import 'search_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  const MainNavigationScreen({
+    super.key,
+    required this.themeMode,
+    required this.onThemeModeChanged,
+  });
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -144,6 +150,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (_isProfileOpen) {
       return ProfileScreen(
         userRole: _userRole,
+        themeMode: widget.themeMode,
+        onThemeModeChanged: widget.onThemeModeChanged,
         onRoleChanged: (role) {
           setState(() {
             _userRole = role;

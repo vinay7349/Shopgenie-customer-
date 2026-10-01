@@ -188,7 +188,7 @@ class _FeedScreenState extends State<FeedScreen>
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.favorite_rounded, size: 16, color: Colors.rose[400] ?? Colors.red),
+                  Icon(Icons.favorite_rounded, size: 16, color: AppColors.followingRose),
                   const SizedBox(width: 4),
                   Text('${post['likes']} Neighbours liked this', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ],

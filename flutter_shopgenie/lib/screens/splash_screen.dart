@@ -199,7 +199,7 @@ class _SplashScreenState extends State<SplashScreen>
                           fontWeight: FontWeight.w500,
                           color: theme.colorScheme.onSurface.withOpacity(0.72),
                         ),
-                        textAlign: TextAlign.Center,
+                        textAlign: TextAlign.center,
                       ),
 
                       const SizedBox(height: 48),
@@ -227,7 +227,7 @@ class _SplashScreenState extends State<SplashScreen>
                             fontSize: 12,
                             color: theme.colorScheme.onSurface.withOpacity(0.55),
                           ),
-                          textAlign: TextAlign.Center,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ],
@@ -242,7 +242,7 @@ class _SplashScreenState extends State<SplashScreen>
                 right: 0,
                 child: Text(
                   'Hyperlocal Commerce & Express Checkout',
-                  textAlign: TextAlign.Center,
+                  textAlign: TextAlign.center,
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

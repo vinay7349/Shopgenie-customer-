@@ -38,7 +38,7 @@ class CustomBottomNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 68,
+          height: 72,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
