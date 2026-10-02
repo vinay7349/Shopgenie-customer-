@@ -10,6 +10,36 @@ import {
   INITIAL_LOYALTY_CARDS 
 } from './src/data/mockData';
 
+let userState = {
+  id: 'usr-8921',
+  name: 'Vinay Kharvik',
+  phone: '+91 98450 12345',
+  email: 'vinaykharvik09@gmail.com',
+  role: 'customer',
+  roles: ['customer', 'verifier'],
+  avatarUrl: '',
+  savedArea: 'Koramangala 4th Block, Bengaluru',
+  memberSince: 'October 2024',
+  employeeId: 'VER-8821',
+  department: 'Loss Prevention & Security Operations',
+  savedProductIds: ['prod-1', 'prod-2', 'p1'],
+  addresses: [
+    { id: 'addr-1', label: 'Home', address: 'Flat 402, Green Glen Layout, Koramangala 4th Block, Bengaluru', landmark: 'Near Sony World Signal', isDefault: true },
+    { id: 'addr-2', label: 'Work', address: 'Prestige Tech Park, Marathahalli-Sarjapur Ring Rd, Bengaluru', landmark: 'Building 2B', isDefault: false }
+  ],
+  paymentMethods: [
+    { id: 'pay-1', type: 'upi', title: 'Google Pay (UPI)', subtitle: 'vinaykharvik@okhdfcbank', isDefault: true },
+    { id: 'pay-2', type: 'card', title: 'HDFC Millennia Credit Card', subtitle: '•••• •••• •••• 4092 (Expires 08/28)', isDefault: false },
+    { id: 'pay-3', type: 'wallet', title: 'ShopGenie Cash Wallet', subtitle: '₹250.00 Cashback Balance', isDefault: false }
+  ],
+  notificationsConfig: {
+    pushEnabled: true,
+    orderUpdates: true,
+    storeOffers: true,
+    localEvents: false
+  }
+};
+
 const mockDjangoApiPlugin = (): Plugin => ({
   name: 'mock-django-api',
   configureServer(server) {
@@ -98,6 +128,101 @@ const mockDjangoApiPlugin = (): Plugin => ({
 
       if (cleanUrl === '/api/loyalty') {
         res.end(JSON.stringify(INITIAL_LOYALTY_CARDS));
+        return;
+      }
+
+      // User endpoints
+      if (cleanUrl === '/api/users/me') {
+        res.end(JSON.stringify({
+          user: userState,
+          status: 'authenticated'
+        }));
+        return;
+      }
+
+      if (cleanUrl === '/api/users/update_profile') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            userState = { ...userState, ...data };
+            res.end(JSON.stringify({ success: true, user: userState }));
+          } catch {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Invalid JSON' }));
+          }
+        });
+        return;
+      }
+
+      if (cleanUrl === '/api/users/switch_role') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            if (data.role) {
+              userState.role = data.role;
+              if (!userState.roles.includes(data.role)) {
+                userState.roles.push(data.role);
+              }
+            }
+            res.end(JSON.stringify({ success: true, user: userState }));
+          } catch {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Invalid JSON' }));
+          }
+        });
+        return;
+      }
+
+      if (cleanUrl === '/api/users/become_shop_owner') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            if (!userState.roles.includes('owner')) {
+              userState.roles.push('owner');
+            }
+            res.end(JSON.stringify({ 
+              success: true, 
+              message: 'Shop registration submitted successfully. Shop Owner role authorized.',
+              user: userState 
+            }));
+          } catch {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Invalid JSON' }));
+          }
+        });
+        return;
+      }
+
+      if (cleanUrl === '/api/users/saved_products/toggle') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const { productId } = JSON.parse(body || '{}');
+            if (productId) {
+              if (userState.savedProductIds.includes(productId)) {
+                userState.savedProductIds = userState.savedProductIds.filter(id => id !== productId);
+              } else {
+                userState.savedProductIds.push(productId);
+              }
+            }
+            res.end(JSON.stringify({ success: true, savedProductIds: userState.savedProductIds }));
+          } catch {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Invalid JSON' }));
+          }
+        });
+        return;
+      }
+
+      if (cleanUrl === '/api/users/delete_account') {
+        res.end(JSON.stringify({ success: true, message: 'Account data purged' }));
         return;
       }
 

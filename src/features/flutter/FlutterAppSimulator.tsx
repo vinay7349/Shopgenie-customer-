@@ -40,15 +40,17 @@ import {
   Map as MapIcon,
   ArrowRight
 } from 'lucide-react';
-import { DeckRole } from './flutterDeckTypes';
+import { DeckRole, DeckOrder, AuditLogEntry } from './flutterDeckTypes';
+import { GateVerifierDeckView } from './roles/GateVerifierDeckView';
+import { INITIAL_DECK_ORDERS, INITIAL_AUDIT_LOGS } from './flutterDeckData';
+import { useShopGenie } from '../../context/ShopGenieContext';
+import { CustomerProfileView } from '../customer/CustomerProfileView';
 
 interface FlutterAppSimulatorProps {
   onOpenCodeExplorer?: () => void;
   activeRole?: DeckRole;
   onRoleChange?: (role: DeckRole) => void;
 }
-
-type UserRole = 'shopper' | 'admin';
 
 interface StoreItem {
   id: string;
@@ -267,25 +269,20 @@ const AVAILABLE_LOCATIONS = [
 
 export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({ 
   onOpenCodeExplorer,
-  activeRole,
+  activeRole = 'shopper',
   onRoleChange
 }) => {
-  const [internalRole, setInternalRole] = useState<UserRole>('shopper');
-  const role: UserRole = activeRole ? (activeRole === 'merchant' || activeRole === 'admin' ? 'admin' : 'shopper') : internalRole;
-  const setRole = (newRole: UserRole) => {
-    setInternalRole(newRole);
-    if (onRoleChange) {
-      onRoleChange(newRole === 'admin' ? 'admin' : 'shopper');
-    }
-  };
-  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'scan' | 'search' | 'cart'>('home');
+  const { setIsProfileOpen, currentUser, setRole } = useShopGenie();
+  const [verifierOrders, setVerifierOrders] = useState<DeckOrder[]>(INITIAL_DECK_ORDERS);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
+
+  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'scan' | 'search' | 'cart' | 'profile'>('home');
   const [currentLocation, setCurrentLocation] = useState('Rajarajeshwari Nagar, Bengaluru');
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStore, setSelectedStore] = useState<StoreItem | null>(null);
   const [activeFeedView, setActiveFeedView] = useState<'feed' | 'offers' | 'following' | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([
     {
       id: 'p1',
@@ -308,8 +305,6 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
   ]);
   const [showExitPass, setShowExitPass] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isStoreOpen, setIsStoreOpen] = useState(true);
-  const [inventory, setInventory] = useState(SAMPLE_PRODUCTS);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -370,25 +365,6 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
         <span>Flutter 3.24 · Material 3 Engine</span>
       </div>
 
-      {/* Role Switcher Pill */}
-      <div className="absolute top-2 right-3 z-50 flex items-center gap-1.5">
-        <button
-          onClick={() => {
-            const next = role === 'shopper' ? 'admin' : 'shopper';
-            setRole(next);
-            showToast(`Switched to ${next === 'admin' ? 'Merchant Deck' : 'Shopper Mode'}`);
-          }}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-xs transition-all ${
-            role === 'admin'
-              ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
-              : 'bg-[#0F766E] text-white hover:bg-[#115E59]'
-          }`}
-        >
-          {role === 'admin' ? <ShieldCheck className="w-3 h-3" /> : <Store className="w-3 h-3" />}
-          <span>{role === 'admin' ? 'Admin Deck' : 'Shopper Mode'}</span>
-        </button>
-      </div>
-
       {/* Toast Notification */}
       {toastMessage && (
         <div className="absolute top-12 left-4 right-4 z-50 bg-[#0F766E] text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-150">
@@ -397,142 +373,19 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* ADMIN CONSOLE VIEW (When role === 'admin')                  */}
-      {/* ========================================================= */}
-      {role === 'admin' ? (
-        <div className="flex-1 flex flex-col pt-10 overflow-y-auto pb-16">
-          {/* Admin Header */}
-          <div className="bg-white dark:bg-[#141C1A] px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
-                  <Store className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">Merchant Console</h2>
-                  <p className="text-[11px] text-slate-500">GreenLeaf Organic Grocers · Koramangala</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setRole('shopper')}
-                className="text-xs text-[#0F766E] dark:text-[#5EEAD4] font-bold hover:underline"
-              >
-                Exit to Shopper
-              </button>
-            </div>
-          </div>
-
-          <div className="p-4 space-y-4">
-            {/* Store Status Toggle */}
-            <div className="bg-white dark:bg-[#141C1A] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-2xs">
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                  {isStoreOpen ? 'Store is Open & Accepting Self-Checkouts' : 'Store Closed'}
-                </span>
-              </div>
-              <button
-                onClick={() => setIsStoreOpen(!isStoreOpen)}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors ${
-                  isStoreOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
-                }`}
-              >
-                {isStoreOpen ? 'ONLINE' : 'OFFLINE'}
-              </button>
-            </div>
-
-            {/* KPI Metrics Grid */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="bg-white dark:bg-[#141C1A] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-                <div className="flex items-center justify-between text-slate-500 mb-1">
-                  <span className="text-[11px] font-semibold">Today's Sales</span>
-                  <DollarSign className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="text-lg font-bold text-slate-800 dark:text-white">$4,280.50</div>
-                <div className="text-[10px] text-emerald-600 font-medium">+18.4% vs last week</div>
-              </div>
-
-              <div className="bg-white dark:bg-[#141C1A] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-                <div className="flex items-center justify-between text-slate-500 mb-1">
-                  <span className="text-[11px] font-semibold">Live Shoppers</span>
-                  <Users className="w-4 h-4 text-[#0F766E]" />
-                </div>
-                <div className="text-lg font-bold text-slate-800 dark:text-white">18 Active</div>
-                <div className="text-[10px] text-slate-500">Scanning in aisles right now</div>
-              </div>
-
-              <div className="bg-white dark:bg-[#141C1A] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-                <div className="flex items-center justify-between text-slate-500 mb-1">
-                  <span className="text-[11px] font-semibold">Orders</span>
-                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="text-lg font-bold text-slate-800 dark:text-white">142 Orders</div>
-                <div className="text-[10px] text-blue-600 font-medium">Avg checkout time 42s</div>
-              </div>
-
-              <div className="bg-white dark:bg-[#141C1A] p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-                <div className="flex items-center justify-between text-slate-500 mb-1">
-                  <span className="text-[11px] font-semibold">Self-Checkout</span>
-                  <Zap className="w-4 h-4 text-amber-500" />
-                </div>
-                <div className="text-lg font-bold text-slate-800 dark:text-white">94.2%</div>
-                <div className="text-[10px] text-amber-600 font-medium">Zero cashier queue</div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => showToast('Broadcasted 20% flash deal to 840 followers!')}
-                className="flex items-center justify-center gap-1.5 bg-[#0F766E] text-white p-2.5 rounded-xl text-xs font-bold shadow-xs hover:bg-[#115E59] transition-colors"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Broadcast Deal</span>
-              </button>
-              <button
-                onClick={() => showToast('Station QR sent to thermal printer!')}
-                className="flex items-center justify-center gap-1.5 bg-white dark:bg-[#141C1A] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 p-2.5 rounded-xl text-xs font-bold shadow-xs hover:bg-slate-50 transition-colors"
-              >
-                <Printer className="w-3.5 h-3.5 text-[#0F766E]" />
-                <span>Print QR Posters</span>
-              </button>
-            </div>
-
-            {/* Live Inventory List */}
-            <div className="bg-white dark:bg-[#141C1A] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-                  Live Aisle Inventory ({inventory.length})
-                </h3>
-                <span className="text-[11px] text-[#0F766E] font-semibold">Barcode Sync Active</span>
-              </div>
-              <div className="space-y-2">
-                {inventory.map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{item.emoji}</span>
-                      <div>
-                        <div className="font-bold text-slate-800 dark:text-slate-200">{item.name}</div>
-                        <div className="text-[10px] text-slate-500">${item.price.toFixed(2)} · Stock: {item.stock}</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setInventory(prev => prev.map(p => p.id === item.id ? { ...p, inStock: !p.inStock } : p));
-                        showToast(`Updated stock status for ${item.name}`);
-                      }}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                        item.inStock ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {item.inStock ? 'In Stock' : 'Out of Stock'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+      {/* Main Screen Content */}
+      {activeRole === 'verifier' ? (
+        /* ========================================================= */
+        /* SECURITY GATE VERIFIER TERMINAL                          */
+        /* ========================================================= */
+        <div className="flex-1 flex flex-col pt-7 overflow-y-auto pb-4 relative">
+          <GateVerifierDeckView
+            orders={verifierOrders}
+            setOrders={setVerifierOrders}
+            auditLogs={auditLogs}
+            setAuditLogs={setAuditLogs}
+            showToast={showToast}
+          />
         </div>
       ) : selectedStore ? (
         /* ========================================================= */
@@ -1007,6 +860,16 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
             </div>
           )}
         </div>
+      ) : activeTab === 'profile' ? (
+        /* ========================================================= */
+        /* CUSTOMER ACCOUNT & PROFILE SCREEN                        */
+        /* ========================================================= */
+        <div className="flex-1 flex flex-col relative pb-16">
+          <CustomerProfileView
+            isInsideSimulator={true}
+            onClose={() => setActiveTab('home')}
+          />
+        </div>
       ) : (
         /* ========================================================= */
         /* HOME SCREEN (Multi-Role Deck Primary Screen)              */
@@ -1047,11 +910,15 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
               </button>
 
               <button
-                onClick={() => setIsProfileModalOpen(true)}
-                className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs flex items-center justify-center transition-all"
-                title="User Profile"
+                onClick={() => {
+                  setSelectedStore(null);
+                  setActiveFeedView(null);
+                  setActiveTab('profile');
+                }}
+                className="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 shadow-2xs flex items-center justify-center transition-all font-heading font-bold text-xs"
+                title="Account & Role Controls"
               >
-                <User className="w-4 h-4 text-slate-700" />
+                {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'VK'}
               </button>
             </div>
           </div>
@@ -1250,7 +1117,7 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
       {/* ========================================================= */}
       {/* 5-TAB CUSTOM BOTTOM NAVIGATION BAR                         */}
       {/* ========================================================= */}
-      {role === 'shopper' && (
+      {activeRole === 'shopper' && (
         <div className="absolute bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#141C1A]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5">
           <div className="grid grid-cols-5 items-center max-w-sm mx-auto">
             {/* 1. Home */}
@@ -1384,46 +1251,6 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
                   {currentLocation === loc && <Check className="w-4 h-4" />}
                 </button>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* PROFILE & SETTINGS MODAL                                  */}
-      {/* ========================================================= */}
-      {isProfileModalOpen && (
-        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-xs flex flex-col justify-end">
-          <div className="bg-white dark:bg-[#141C1A] rounded-t-3xl p-5 border-t border-slate-200 dark:border-slate-800 space-y-4 animate-in slide-in-from-bottom duration-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold">Account & Role</h3>
-              <button onClick={() => setIsProfileModalOpen(false)} className="text-xs font-bold text-slate-400">Close</button>
-            </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#0F766E]/20 text-[#0F766E] font-bold flex items-center justify-center text-sm">
-                VK
-              </div>
-              <div>
-                <div className="text-xs font-bold">Vinay Kharvik</div>
-                <div className="text-[11px] text-slate-500">vinaykharvik09@gmail.com</div>
-              </div>
-            </div>
-
-            {/* Role Switcher in Profile */}
-            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
-              <div>
-                <div className="text-xs font-bold text-amber-800 dark:text-amber-400">Active Role Mode</div>
-                <div className="text-[10px] text-slate-500">{role === 'admin' ? 'Store Merchant Console' : 'Customer Shopper Mode'}</div>
-              </div>
-              <button
-                onClick={() => {
-                  setRole(role === 'shopper' ? 'admin' : 'shopper');
-                  setIsProfileModalOpen(false);
-                }}
-                className="px-3 py-1 bg-amber-500 text-slate-950 rounded-xl text-xs font-bold hover:bg-amber-400"
-              >
-                Switch to {role === 'shopper' ? 'Admin' : 'Shopper'}
-              </button>
             </div>
           </div>
         </div>

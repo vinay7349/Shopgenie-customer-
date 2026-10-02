@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   User, 
   UserRole, 
+  UserAddress,
+  UserNotificationConfig,
   Shop, 
   Product, 
   Offer, 
@@ -34,9 +36,20 @@ interface ShopGenieContextType {
   // User & Role
   currentUser: User;
   setRole: (role: UserRole) => void;
+  updateProfile: (profile: Partial<User>) => void;
+  changePassword: (oldPassword: string, newPassword: string) => { success: boolean; message: string };
+  becomeShopOwner: (data: { shopName: string; category: string; address: string; phone: string }) => Promise<boolean>;
+  deleteAccount: () => Promise<boolean>;
   isLoggedIn: boolean;
   login: (emailOrPhone: string, role: UserRole) => void;
   logout: () => void;
+  
+  // Saved Products & Addresses
+  savedProducts: Product[];
+  toggleSavedProduct: (productId: string) => Promise<void>;
+  addAddress: (addr: Omit<UserAddress, 'id'>) => void;
+  deleteAddress: (id: string) => void;
+  updateNotificationsConfig: (config: Partial<UserNotificationConfig>) => void;
   
   // Location
   currentArea: string;
@@ -150,14 +163,46 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [language, setLanguage] = useState<AppLanguage>('en');
 
   // User
-  const [currentUser, setCurrentUser] = useState<User>({
-    id: 'user-guest-1',
-    name: 'Ananya Sharma',
-    phone: '+91 98451 90812',
-    email: 'ananya.s@shopgenie.app',
-    role: 'customer',
-    savedArea: 'Rajarajeshwari Nagar, Bengaluru'
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    try {
+      const saved = localStorage.getItem('shopgenie_user_profile');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: 'usr-8921',
+      name: 'Vinay Kharvik',
+      phone: '+91 98450 12345',
+      email: 'vinaykharvik09@gmail.com',
+      role: 'customer',
+      roles: ['customer', 'verifier'],
+      savedArea: 'Koramangala 4th Block, Bengaluru',
+      memberSince: 'October 2024',
+      employeeId: 'VER-8821',
+      department: 'Loss Prevention & Security Operations',
+      savedProductIds: ['prod-1', 'prod-2', 'p1'],
+      addresses: [
+        { id: 'addr-1', label: 'Home', address: 'Flat 402, Green Glen Layout, Koramangala 4th Block, Bengaluru', landmark: 'Near Sony World Signal', isDefault: true },
+        { id: 'addr-2', label: 'Work', address: 'Prestige Tech Park, Marathahalli-Sarjapur Ring Rd, Bengaluru', landmark: 'Building 2B', isDefault: false }
+      ],
+      paymentMethods: [
+        { id: 'pay-1', type: 'upi', title: 'Google Pay (UPI)', subtitle: 'vinaykharvik@okhdfcbank', isDefault: true },
+        { id: 'pay-2', type: 'card', title: 'HDFC Millennia Credit Card', subtitle: '•••• •••• •••• 4092 (Expires 08/28)', isDefault: false },
+        { id: 'pay-3', type: 'wallet', title: 'ShopGenie Cash Wallet', subtitle: '₹250.00 Cashback Balance', isDefault: false }
+      ],
+      notificationsConfig: {
+        pushEnabled: true,
+        orderUpdates: true,
+        storeOffers: true,
+        localEvents: false
+      }
+    };
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('shopgenie_user_profile', JSON.stringify(currentUser));
+    } catch {}
+  }, [currentUser]);
   const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   // Navigation
@@ -316,26 +361,158 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   const toggleDeviceViewMode = () => setDeviceViewMode((prev) => (prev === 'phone' ? 'full' : 'phone'));
 
-  const setRole = (role: UserRole) => {
-    setCurrentUser((prev) => ({ ...prev, role }));
+  const setRole = async (role: UserRole) => {
+    try {
+      const res = await djangoApi.switchRole(role);
+      if (res?.user) {
+        setCurrentUser(res.user);
+      } else {
+        setCurrentUser((prev) => ({
+          ...prev,
+          role,
+          roles: prev.roles?.includes(role) ? prev.roles : [...(prev.roles || ['customer']), role]
+        }));
+      }
+    } catch {
+      setCurrentUser((prev) => ({ ...prev, role }));
+    }
+    const label = role === 'verifier' ? 'Security Gate Verifier' : role === 'owner' ? 'Shop Owner' : 'Customer';
     showSnackbar({
-      message: `Switched to ${role === 'customer' ? 'Customer / Shopper' : 'Admin'} Mode`,
+      message: `Active Mode switched to ${label}`,
       type: 'info'
     });
+  };
+
+  const updateProfile = async (profile: Partial<User>) => {
+    try {
+      const updated = await djangoApi.updateUserProfile(profile);
+      if (updated) {
+        setCurrentUser(updated);
+      } else {
+        setCurrentUser((prev) => ({ ...prev, ...profile }));
+      }
+    } catch {
+      setCurrentUser((prev) => ({ ...prev, ...profile }));
+    }
+    showSnackbar({
+      message: 'Profile details updated successfully',
+      type: 'success'
+    });
+  };
+
+  const becomeShopOwner = async (data: { shopName: string; category: string; address: string; phone: string }): Promise<boolean> => {
+    try {
+      const res = await djangoApi.becomeShopOwner(data);
+      if (res?.user) {
+        setCurrentUser(res.user);
+      } else {
+        setCurrentUser((prev) => ({
+          ...prev,
+          role: 'owner',
+          roles: prev.roles?.includes('owner') ? prev.roles : [...(prev.roles || ['customer']), 'owner']
+        }));
+      }
+      showSnackbar({
+        message: 'Shop registration submitted! Shop Owner role authorized.',
+        type: 'success'
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const toggleSavedProduct = async (productId: string) => {
+    try {
+      const updatedIds = await djangoApi.toggleSavedProduct(productId);
+      if (updatedIds) {
+        setCurrentUser((prev) => ({ ...prev, savedProductIds: updatedIds }));
+      } else {
+        setCurrentUser((prev) => {
+          const ids = prev.savedProductIds || [];
+          const exists = ids.includes(productId);
+          return {
+            ...prev,
+            savedProductIds: exists ? ids.filter(id => id !== productId) : [...ids, productId]
+          };
+        });
+      }
+    } catch {
+      setCurrentUser((prev) => {
+        const ids = prev.savedProductIds || [];
+        const exists = ids.includes(productId);
+        return {
+          ...prev,
+          savedProductIds: exists ? ids.filter(id => id !== productId) : [...ids, productId]
+        };
+      });
+    }
+  };
+
+  const addAddress = (addr: Omit<UserAddress, 'id'>) => {
+    const newAddr: UserAddress = { ...addr, id: 'addr-' + Date.now() };
+    setCurrentUser((prev) => ({
+      ...prev,
+      addresses: [...(prev.addresses || []), newAddr]
+    }));
+    showSnackbar({ message: 'Address saved successfully', type: 'success' });
+  };
+
+  const deleteAddress = (id: string) => {
+    setCurrentUser((prev) => ({
+      ...prev,
+      addresses: (prev.addresses || []).filter(a => a.id !== id)
+    }));
+    showSnackbar({ message: 'Address removed', type: 'info' });
+  };
+
+  const updateNotificationsConfig = (config: Partial<UserNotificationConfig>) => {
+    setCurrentUser((prev) => ({
+      ...prev,
+      notificationsConfig: {
+        ...(prev.notificationsConfig || { pushEnabled: true, orderUpdates: true, storeOffers: true, localEvents: false }),
+        ...config
+      }
+    }));
+    showSnackbar({ message: 'Notification preferences updated', type: 'success' });
+  };
+
+  const deleteAccount = async (): Promise<boolean> => {
+    try {
+      await djangoApi.deleteAccount();
+    } catch {}
+    localStorage.removeItem('shopgenie_user_profile');
+    setIsLoggedIn(false);
+    showSnackbar({ message: 'Your account has been deleted', type: 'warning' });
+    return true;
+  };
+
+  const changePassword = (oldPassword: string, newPassword: string): { success: boolean; message: string } => {
+    if (!oldPassword.trim()) {
+      return { success: false, message: 'Please enter your current password' };
+    }
+    if (newPassword.length < 8) {
+      return { success: false, message: 'New password must be at least 8 characters long' };
+    }
+    showSnackbar({
+      message: 'Password changed successfully',
+      type: 'success'
+    });
+    return { success: true, message: 'Password updated successfully' };
   };
 
   const login = (emailOrPhone: string, role: UserRole) => {
     setIsLoggedIn(true);
     setCurrentUser({
       id: 'user-1',
-      name: role === 'admin' ? 'Genie Admin' : 'Ananya Sharma',
+      name: 'Ananya Sharma',
       phone: emailOrPhone.includes('@') ? '+91 98451 90812' : emailOrPhone,
       email: emailOrPhone.includes('@') ? emailOrPhone : 'ananya.s@shopgenie.app',
       role,
       savedArea: currentArea
     });
     showSnackbar({
-      message: `Welcome back, ${role === 'admin' ? 'Genie Admin' : 'Ananya'}!`,
+      message: 'Welcome back, Ananya!',
       type: 'success'
     });
   };
@@ -684,11 +861,22 @@ export const ShopGenieProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
+  const savedProducts = products.filter(p => currentUser.savedProductIds?.includes(p.id));
+
   return (
     <ShopGenieContext.Provider
       value={{
         currentUser,
         setRole,
+        updateProfile,
+        changePassword,
+        becomeShopOwner,
+        deleteAccount,
+        savedProducts,
+        toggleSavedProduct,
+        addAddress,
+        deleteAddress,
+        updateNotificationsConfig,
         isLoggedIn,
         login,
         logout,

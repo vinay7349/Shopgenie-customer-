@@ -1,4 +1,4 @@
-export type DeckRole = 'shopper' | 'merchant' | 'verifier' | 'admin';
+export type DeckRole = 'shopper' | 'verifier';
 
 export interface StoreItem {
   id: string;

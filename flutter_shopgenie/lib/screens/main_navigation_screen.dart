@@ -3,7 +3,6 @@ import '../models/cart_item.dart';
 import '../models/store_item.dart';
 import '../models/user_role.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
-import 'admin_dashboard_screen.dart';
 import 'bag_screen.dart';
 import 'feed_screen.dart';
 import 'home_screen.dart';
@@ -93,18 +92,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Role System: If Admin Mode is active, render Merchant Deck
-    if (_userRole == UserRole.admin) {
-      return AdminDashboardScreen(
-        onSwitchRole: (newRole) {
-          setState(() {
-            _userRole = newRole;
-          });
-        },
-      );
-    }
-
-    // 2. Shopper Sub-screens overlay (Shop Detail, Feed/Offers/Following, Profile)
+    // 1. Shopper Sub-screens overlay (Shop Detail, Feed/Offers/Following, Profile)
     if (_selectedStore != null) {
       return ShopDetailScreen(
         store: _selectedStore!,

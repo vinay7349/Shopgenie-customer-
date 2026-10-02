@@ -219,6 +219,103 @@ class DjangoApiService {
       return null;
     }
   }
+  /**
+   * Fetch authenticated user profile
+   */
+  async getUserProfile(): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/users/me`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.user || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Update user profile details
+   */
+  async updateUserProfile(data: any): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/users/update_profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) return null;
+      const resData = await res.json();
+      return resData.user || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Backend-driven role switch
+   */
+  async switchRole(role: string): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/users/switch_role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Register as Shop Owner
+   */
+  async becomeShopOwner(shopData: { shopName: string; category: string; address: string; phone: string }): Promise<any | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/users/become_shop_owner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(shopData)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Toggle saved product
+   */
+  async toggleSavedProduct(productId: string): Promise<string[] | null> {
+    try {
+      const res = await fetch(`${this.baseUrl}/users/saved_products/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId })
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.savedProductIds || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Delete account
+   */
+  async deleteAccount(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/users/delete_account`, {
+        method: 'POST'
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
 }
 
 export const djangoApi = new DjangoApiService();

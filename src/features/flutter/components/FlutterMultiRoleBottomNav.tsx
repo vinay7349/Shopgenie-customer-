@@ -32,7 +32,7 @@ export const FlutterMultiRoleBottomNav: React.FC<FlutterMultiRoleBottomNavProps>
   cartCount
 }) => {
   if (role !== 'shopper') {
-    // For merchant, verifier, and admin, subtabs are displayed in their top header for fast thumb access
+    // For verifier, subtabs are displayed in their top header for fast thumb access
     return null;
   }
 

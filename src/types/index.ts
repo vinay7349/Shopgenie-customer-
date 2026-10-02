@@ -1,4 +1,27 @@
-export type UserRole = 'customer' | 'shopper' | 'owner' | 'merchant' | 'verifier' | 'admin';
+export type UserRole = 'customer' | 'shopper' | 'verifier' | 'owner';
+
+export interface UserAddress {
+  id: string;
+  label: 'Home' | 'Work' | 'Other';
+  address: string;
+  landmark?: string;
+  isDefault: boolean;
+}
+
+export interface UserPaymentMethod {
+  id: string;
+  type: 'upi' | 'card' | 'wallet';
+  title: string;
+  subtitle: string;
+  isDefault: boolean;
+}
+
+export interface UserNotificationConfig {
+  pushEnabled: boolean;
+  orderUpdates: boolean;
+  storeOffers: boolean;
+  localEvents: boolean;
+}
 
 export interface User {
   id: string;
@@ -6,8 +29,16 @@ export interface User {
   phone: string;
   email: string;
   role: UserRole;
+  roles?: UserRole[];
   avatarUrl?: string;
   savedArea: string;
+  memberSince?: string;
+  employeeId?: string;
+  department?: string;
+  savedProductIds?: string[];
+  addresses?: UserAddress[];
+  paymentMethods?: UserPaymentMethod[];
+  notificationsConfig?: UserNotificationConfig;
 }
 
 export type ShopCategory = 

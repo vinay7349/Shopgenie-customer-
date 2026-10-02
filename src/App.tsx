@@ -18,11 +18,15 @@ import {
   Server, 
   Wifi, 
   BatteryMedium, 
-  Award
+  Award,
+  User
 } from 'lucide-react';
 
 const ShopGenieMainContent: React.FC = () => {
   const {
+    currentUser,
+    setRole,
+    setIsProfileOpen,
     deviceViewMode,
     toggleDeviceViewMode,
     setIsCodeModalOpen,
@@ -30,7 +34,7 @@ const ShopGenieMainContent: React.FC = () => {
     hideSnackbar
   } = useShopGenie();
 
-  const [activeRole, setActiveRole] = useState<DeckRole>('shopper');
+  const activeRole: DeckRole = currentUser.role === 'verifier' ? 'verifier' : 'shopper';
   const [isLoyaltyWalletOpen, setIsLoyaltyWalletOpen] = useState(false);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const [isDjangoModalOpen, setIsDjangoModalOpen] = useState(false);
@@ -52,50 +56,40 @@ const ShopGenieMainContent: React.FC = () => {
             {/* Multi-Role Deck Switcher */}
             <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 text-xs font-semibold shadow-2xs">
               <button
-                onClick={() => setActiveRole('shopper')}
+                onClick={() => setRole('shopper')}
                 className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
                   activeRole === 'shopper'
                     ? 'bg-[#0F766E] text-white shadow-2xs font-bold'
                     : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
                 }`}
+                title="Switch to Shopper (Self-Checkout & Catalog)"
               >
                 <span>🛍️</span>
                 <span>Shopper</span>
               </button>
               <button
-                onClick={() => setActiveRole('merchant')}
-                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
-                  activeRole === 'merchant'
-                    ? 'bg-amber-500 text-slate-950 shadow-2xs font-bold'
-                    : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
-                }`}
-              >
-                <span>🏪</span>
-                <span>Merchant</span>
-              </button>
-              <button
-                onClick={() => setActiveRole('verifier')}
+                onClick={() => setRole('verifier')}
                 className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
                   activeRole === 'verifier'
                     ? 'bg-indigo-600 text-white shadow-2xs font-bold'
                     : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
                 }`}
+                title="Switch to Gate Verifier (Security Exit Terminal)"
               >
                 <span>🛡️</span>
                 <span>Verifier</span>
               </button>
-              <button
-                onClick={() => setActiveRole('admin')}
-                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
-                  activeRole === 'admin'
-                    ? 'bg-purple-600 text-white shadow-2xs font-bold'
-                    : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C]'
-                }`}
-              >
-                <span>⚙️</span>
-                <span>Admin</span>
-              </button>
             </div>
+
+            {/* Account & Role Quick Trigger */}
+            <button
+              onClick={() => setIsProfileOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+              title="Account & Role Settings"
+            >
+              <User className="w-3.5 h-3.5 text-[#0F766E] dark:text-[#5EEAD4]" />
+              <span className="hidden md:inline">{currentUser.name.split(' ')[0]}</span>
+            </button>
 
             {/* Loyalty Wallet Quick Trigger */}
             <button
@@ -173,7 +167,7 @@ const ShopGenieMainContent: React.FC = () => {
               <FlutterAppSimulator
                 onOpenCodeExplorer={() => setIsCodeModalOpen(true)}
                 activeRole={activeRole}
-                onRoleChange={setActiveRole}
+                onRoleChange={(r) => setRole(r)}
               />
             </div>
 
@@ -189,7 +183,7 @@ const ShopGenieMainContent: React.FC = () => {
               <FlutterAppSimulator
                 onOpenCodeExplorer={() => setIsCodeModalOpen(true)}
                 activeRole={activeRole}
-                onRoleChange={setActiveRole}
+                onRoleChange={(r) => setRole(r)}
               />
             </div>
           </div>

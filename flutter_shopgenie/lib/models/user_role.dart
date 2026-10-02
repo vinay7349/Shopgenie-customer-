@@ -1,6 +1,6 @@
 enum UserRole {
   shopper,
-  admin,
+  verifier,
 }
 
 extension UserRoleExtension on UserRole {
@@ -8,8 +8,8 @@ extension UserRoleExtension on UserRole {
     switch (this) {
       case UserRole.shopper:
         return 'Shopper';
-      case UserRole.admin:
-        return 'Store Admin';
+      case UserRole.verifier:
+        return 'Gate Verifier';
     }
   }
 
@@ -17,8 +17,17 @@ extension UserRoleExtension on UserRole {
     switch (this) {
       case UserRole.shopper:
         return 'Shopper Mode';
-      case UserRole.admin:
-        return 'Merchant Deck';
+      case UserRole.verifier:
+        return 'Gate Verifier Mode';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case UserRole.shopper:
+        return 'Browse local stores, scan barcodes, and self-checkout.';
+      case UserRole.verifier:
+        return 'Verify customer exit passes, count items, and unlock turnstiles.';
     }
   }
 }
