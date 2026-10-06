@@ -189,18 +189,18 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.bolt_rounded, color: AppColors.sparkAmber, size: 28),
+                  const Icon(Icons.auto_awesome, color: AppColors.sparkAmber, size: 28),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Self-Checkout Station Live',
+                          'AI Product Scan Enabled',
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                         Text(
-                          'Scan items right off the shelf with phone camera',
+                          'Point phone camera at shelf products to identify instantly',
                           style: TextStyle(color: Colors.white70, fontSize: 11),
                         ),
                       ],
@@ -213,7 +213,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                       foregroundColor: AppColors.genieTeal,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Scan Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    child: const Text('AI Scan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                   ),
                 ],
               ),
@@ -242,7 +242,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               padding: const EdgeInsets.all(32),
               child: Center(
                 child: Text(
-                  'Use in-store barcode scanner to add any item from the aisle!',
+                  'Point camera at shelf items to identify with AI Product Scan!',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey[600]),
                 ),
@@ -322,12 +322,11 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                             name: p.name,
                             price: p.price,
                             emoji: p.emoji,
-                            barcode: p.barcode,
                           ),
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Added ${p.name} to cart!'),
+                            content: Text('Added ${p.name} to Smart Bag!'),
                             duration: const Duration(seconds: 1),
                             backgroundColor: AppColors.genieTeal,
                           ),
@@ -356,8 +355,8 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 height: 48,
                 child: ElevatedButton.icon(
                   onPressed: widget.onStartScan,
-                  icon: const Icon(Icons.qr_code_scanner_rounded),
-                  label: const Text('Launch Self-Checkout Scanner', style: TextStyle(fontWeight: FontWeight.bold)),
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Launch AI Product Scan', style: TextStyle(fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.genieTeal,
                     foregroundColor: Colors.white,

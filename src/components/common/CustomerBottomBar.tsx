@@ -1,6 +1,6 @@
 import React from 'react';
 import { useShopGenie } from '../../context/ShopGenieContext';
-import { Home, MapPin, Search, QrCode, ShoppingBag } from 'lucide-react';
+import { Home, MapPin, Search, Sparkles, ShoppingBag } from 'lucide-react';
 
 export const CustomerBottomBar: React.FC = () => {
   const { customerTab, setCustomerTab, cart, setSelectedShopId } = useShopGenie();
@@ -46,21 +46,21 @@ export const CustomerBottomBar: React.FC = () => {
           <span className="text-[10px] mt-1 tracking-tight">Map</span>
         </button>
 
-        {/* 3. Center Floating Scan & Pay Button */}
+        {/* 3. Center Floating AI Scan Button */}
         <div className="flex flex-col items-center -mt-6">
           <button
             onClick={() => handleTabClick('scan')}
             className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform duration-200 active:scale-95 ${
               customerTab === 'scan'
-                ? 'bg-[#F59E0B] text-slate-950 ring-4 ring-[#F59E0B]/30'
+                ? 'bg-[#7C3AED] text-white ring-4 ring-[#7C3AED]/30'
                 : 'bg-gradient-to-tr from-[#0F766E] to-[#14B8A6] text-white hover:brightness-110 ring-4 ring-white dark:ring-[#171D1B]'
             }`}
-            aria-label="Scan & Pay Self Checkout"
+            aria-label="AI Product Scan"
           >
-            <QrCode className="w-6 h-6 stroke-[2.2]" />
+            <Sparkles className="w-6 h-6 stroke-[2.2]" />
           </button>
           <span className="text-[10px] font-bold text-[#0F766E] dark:text-[#5EEAD4] mt-1 tracking-tight">
-            Scan & Pay
+            AI Scan
           </span>
         </div>
 
@@ -78,7 +78,7 @@ export const CustomerBottomBar: React.FC = () => {
           <span className="text-[10px] mt-1 tracking-tight">Search</span>
         </button>
 
-        {/* 5. Cart Tab with Badge */}
+        {/* 5. Smart Bag Tab with Badge */}
         <button
           onClick={() => handleTabClick('cart')}
           className={`flex flex-col items-center justify-center py-1 transition-colors min-h-[48px] relative ${
@@ -86,7 +86,7 @@ export const CustomerBottomBar: React.FC = () => {
               ? 'text-[#0F766E] dark:text-[#5EEAD4] font-semibold'
               : 'text-[#5B6B67] dark:text-[#9DB0AB] hover:text-[#0F1F1C] dark:hover:text-white'
           }`}
-          aria-label="Cart tab"
+          aria-label="Smart Bag tab"
         >
           <div className="relative">
             <ShoppingBag className={`w-5 h-5 transition-transform duration-150 ${customerTab === 'cart' ? 'scale-110' : ''}`} />
@@ -96,7 +96,7 @@ export const CustomerBottomBar: React.FC = () => {
               </span>
             )}
           </div>
-          <span className="text-[10px] mt-1 tracking-tight">Cart</span>
+          <span className="text-[10px] mt-1 tracking-tight">Smart Bag</span>
         </button>
       </div>
     </nav>

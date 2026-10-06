@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 class QuickActionCards extends StatelessWidget {
   final VoidCallback onFeedTap;
@@ -61,14 +62,14 @@ class QuickActionCards extends StatelessWidget {
           ),
           const SizedBox(width: 10),
 
-          // 4. Scan Card
+          // 4. AI Scan Card
           Expanded(
             child: _buildActionCard(
               isDark: isDark,
-              label: 'Scan',
-              icon: Icons.qr_code_scanner_rounded,
-              iconColor: const Color(0xFF4F46E5),
-              iconBgColor: const Color(0xFFEEF2FF),
+              label: 'AI Scan',
+              icon: Icons.auto_awesome,
+              iconColor: AppColors.aiViolet,
+              iconBgColor: const Color(0xFFF3E8FF),
               onTap: onScanTap,
             ),
           ),

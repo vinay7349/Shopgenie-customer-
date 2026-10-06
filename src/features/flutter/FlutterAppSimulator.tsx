@@ -38,7 +38,9 @@ import {
   Camera,
   Bell,
   Map as MapIcon,
-  ArrowRight
+  ArrowRight,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { DeckRole, DeckOrder, AuditLogEntry } from './flutterDeckTypes';
 import { GateVerifierDeckView } from './roles/GateVerifierDeckView';
@@ -74,22 +76,29 @@ interface ProductItem {
   storeId: string;
   storeName: string;
   name: string;
+  brand?: string;
   category: string;
+  size?: string;
   price: number;
   mrp: number;
   emoji: string;
-  barcode: string;
+  barcode?: string;
   stock: number;
   inStock: boolean;
+  confidence?: number;
 }
 
 interface CartItem {
   id: string;
   storeId: string;
   name: string;
+  brand?: string;
+  category?: string;
+  size?: string;
   price: number;
   emoji: string;
-  barcode: string;
+  barcode?: string;
+  confidence?: number;
   quantity: number;
 }
 
@@ -178,82 +187,94 @@ const SAMPLE_STORES: StoreItem[] = [
 
 const SAMPLE_PRODUCTS: ProductItem[] = [
   {
-    id: 'p1',
+    id: '101',
     storeId: '1',
     storeName: 'GreenLeaf Organic Grocers',
-    name: 'Organic Hass Avocado (2 pack)',
-    category: 'Produce',
-    price: 3.49,
-    mrp: 4.49,
-    emoji: '🥑',
-    barcode: '8901234567890',
+    name: 'Coca-Cola 500ml',
+    brand: 'Coca-Cola',
+    category: 'Beverages',
+    size: '500 ml',
+    price: 40,
+    mrp: 45,
+    emoji: '🥤',
     stock: 45,
-    inStock: true
+    inStock: true,
+    confidence: 0.96
   },
   {
-    id: 'p2',
+    id: '102',
     storeId: '1',
     storeName: 'GreenLeaf Organic Grocers',
-    name: 'Farm Fresh Almond Milk 1L',
+    name: "Lay's Classic",
+    brand: "Lay's",
+    category: 'Snacks',
+    size: '50 g',
+    price: 20,
+    mrp: 20,
+    emoji: '🥔',
+    stock: 50,
+    inStock: true,
+    confidence: 0.98
+  },
+  {
+    id: '103',
+    storeId: '1',
+    storeName: 'GreenLeaf Organic Grocers',
+    name: 'Amul Milk 1L',
+    brand: 'Amul',
     category: 'Dairy',
-    price: 2.89,
-    mrp: 3.50,
+    size: '1 L',
+    price: 65,
+    mrp: 66,
     emoji: '🥛',
-    barcode: '8901234567891',
-    stock: 28,
-    inStock: true
+    stock: 30,
+    inStock: true,
+    confidence: 0.94
   },
   {
-    id: 'p3',
+    id: '104',
     storeId: '1',
     storeName: 'GreenLeaf Organic Grocers',
-    name: 'Crunchy Honey Granola 400g',
-    category: 'Breakfast',
-    price: 4.99,
-    mrp: 5.99,
-    emoji: '🥣',
-    barcode: '8901234567892',
-    stock: 19,
-    inStock: true
+    name: 'Nescafe Classic 50g',
+    brand: 'Nescafe',
+    category: 'Beverages',
+    size: '50 g',
+    price: 180,
+    mrp: 195,
+    emoji: '☕',
+    stock: 25,
+    inStock: true,
+    confidence: 0.95
   },
   {
-    id: 'p4',
+    id: '105',
     storeId: '2',
     storeName: 'The Daily Crust Bakery',
     name: 'Artisan Sourdough Boule',
+    brand: 'The Daily Crust',
     category: 'Bakery',
-    price: 4.25,
-    mrp: 5.00,
+    size: '400 g',
+    price: 120,
+    mrp: 140,
     emoji: '🍞',
-    barcode: '8901234567893',
     stock: 12,
-    inStock: true
+    inStock: true,
+    confidence: 0.93
   },
   {
-    id: 'p5',
+    id: '106',
     storeId: '2',
     storeName: 'The Daily Crust Bakery',
     name: 'French Butter Croissant',
+    brand: 'The Daily Crust',
     category: 'Pastry',
-    price: 2.50,
-    mrp: 3.00,
+    size: '80 g',
+    price: 85,
+    mrp: 95,
     emoji: '🥐',
-    barcode: '8901234567894',
     stock: 35,
-    inStock: true
-  },
-  {
-    id: 'p6',
-    storeId: '4',
-    storeName: 'Apex Digital Hub',
-    name: 'ANC Wireless Headphones',
-    category: 'Audio',
-    price: 49.99,
-    mrp: 69.99,
-    emoji: '🎧',
-    barcode: '8901234567895',
-    stock: 8,
-    inStock: true
+    inStock: true,
+    confidence: 0.92
   }
 ];
 
@@ -285,25 +306,46 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
   const [activeFeedView, setActiveFeedView] = useState<'feed' | 'offers' | 'following' | null>(null);
   const [cart, setCart] = useState<CartItem[]>([
     {
-      id: 'p1',
+      id: '101',
       storeId: '1',
-      name: 'Organic Hass Avocado (2 pack)',
-      price: 3.49,
-      emoji: '🥑',
-      barcode: '8901234567890',
+      name: 'Coca-Cola 500ml',
+      brand: 'Coca-Cola',
+      category: 'Beverages',
+      size: '500 ml',
+      price: 40,
+      emoji: '🥤',
+      confidence: 0.96,
       quantity: 1
     },
     {
-      id: 'p2',
+      id: '102',
       storeId: '1',
-      name: 'Farm Fresh Almond Milk 1L',
-      price: 2.89,
+      name: "Lay's Classic",
+      brand: "Lay's",
+      category: 'Snacks',
+      size: '50 g',
+      price: 20,
+      emoji: '🥔',
+      confidence: 0.98,
+      quantity: 1
+    },
+    {
+      id: '103',
+      storeId: '1',
+      name: 'Amul Milk 1L',
+      brand: 'Amul',
+      category: 'Dairy',
+      size: '1 L',
+      price: 65,
       emoji: '🥛',
-      barcode: '8901234567891',
+      confidence: 0.94,
       quantity: 1
     }
   ]);
-  const [showExitPass, setShowExitPass] = useState(false);
+  const [aiScanStatus, setAiScanStatus] = useState<'idle' | 'analyzing' | 'detected' | 'lowConfidence' | 'multiple' | 'unrecognized' | 'networkError' | 'permissionDenied'>('idle');
+  const [aiDetectedProduct, setAiDetectedProduct] = useState<ProductItem | null>(null);
+  const [isManualSearchOpen, setIsManualSearchOpen] = useState(false);
+  const [manualSearchQuery, setManualSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -311,11 +353,38 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
     setTimeout(() => setToastMessage(null), 2200);
   };
 
+  const runAiScan = (productId?: string, scenario?: string) => {
+    setAiScanStatus('analyzing');
+    setAiDetectedProduct(null);
+    setTimeout(() => {
+      if (scenario === 'low') {
+        setAiScanStatus('lowConfidence');
+        return;
+      }
+      if (scenario === 'multiple') {
+        setAiScanStatus('multiple');
+        return;
+      }
+      if (scenario === 'unrecognized') {
+        setAiScanStatus('unrecognized');
+        return;
+      }
+      if (scenario === 'network') {
+        setAiScanStatus('networkError');
+        return;
+      }
+      if (scenario === 'permission') {
+        setAiScanStatus('permissionDenied');
+        return;
+      }
+      const match = SAMPLE_PRODUCTS.find(p => p.id === productId) || SAMPLE_PRODUCTS[0];
+      setAiDetectedProduct(match);
+      setAiScanStatus('detected');
+    }, 450);
+  };
+
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const tax = subtotal * 0.05;
-  const discount = subtotal > 0 ? 1.50 : 0.0;
-  const totalPayable = Math.max(0, subtotal + tax - discount);
+  const estimatedTotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const filteredStores = SAMPLE_STORES.filter(s => {
     const matchesCat = selectedCategory === 'All' || s.category.toLowerCase().includes(selectedCategory.toLowerCase());
@@ -328,7 +397,7 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
 
   const handleAddToCart = (product: ProductItem | CartItem) => {
     setCart(prev => {
-      const idx = prev.findIndex(item => item.id === product.id || item.barcode === product.barcode);
+      const idx = prev.findIndex(item => item.id === product.id);
       if (idx >= 0) {
         const updated = [...prev];
         updated[idx].quantity += 1;
@@ -340,14 +409,17 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
           id: product.id,
           storeId: product.storeId,
           name: product.name,
+          brand: (product as any).brand || '',
+          category: (product as any).category || '',
+          size: (product as any).size || '',
           price: product.price,
           emoji: product.emoji,
-          barcode: product.barcode,
+          confidence: (product as any).confidence || 0.96,
           quantity: 1
         }
       ];
     });
-    showToast(`Added ${product.name} to cart!`);
+    showToast(`Added ${product.name} to Smart Bag!`);
   };
 
   const handleIncrement = (id: string) => {
@@ -628,64 +700,280 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
         </div>
       ) : activeTab === 'scan' ? (
         /* ========================================================= */
-        /* SCAN & PAY SCREEN                                         */
+        /* AI PRODUCT SCAN SCREEN                                    */
         /* ========================================================= */
         <div className="flex-1 flex flex-col pt-10 bg-black text-white relative pb-16">
           <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
             <div className="flex items-center gap-1.5 text-xs font-bold">
-              <QrCode className="w-4 h-4 text-[#5EEAD4]" />
-              <span>Self-Checkout Scanner</span>
+              <Sparkles className="w-4 h-4 text-[#5EEAD4]" />
+              <span>AI Product Scan</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => showToast('Torch toggled')} className="p-1 rounded bg-white/10">
+              <button onClick={() => showToast('Torch toggled')} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15" title="Toggle Flashlight">
                 <Flashlight className="w-4 h-4 text-amber-400" />
               </button>
-            </div>
-          </div>
-
-          {/* Camera Viewfinder */}
-          <div className="flex-1 flex flex-col items-center justify-center p-6">
-            <div className="relative w-64 h-64 rounded-3xl border-2 border-white/20 bg-white/5 flex items-center justify-center overflow-hidden">
-              {/* Corner marks */}
-              <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-amber-400 rounded-tl-lg" />
-              <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-amber-400 rounded-tr-lg" />
-              <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-amber-400 rounded-bl-lg" />
-              <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-amber-400 rounded-br-lg" />
-
-              {/* Animated Laser line */}
-              <div className="absolute inset-x-4 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-pulse shadow-[0_0_12px_#F59E0B]" />
-
-              <div className="text-center p-4">
-                <QrCode className="w-12 h-12 mx-auto text-white/30 mb-2" />
-                <p className="text-[11px] text-white/80 font-medium">Align Barcode Inside Frame</p>
+              <button onClick={() => setIsManualSearchOpen(true)} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/15" title="Search product manually">
+                <Search className="w-4 h-4 text-white" />
+              </button>
+              {/* Test scenario picker */}
+              <div className="relative">
+                <button 
+                  onClick={() => {
+                    const scenarios = ['low', 'multiple', 'unrecognized', 'network', 'permission'];
+                    const currentIdx = Math.floor(Math.random() * scenarios.length);
+                    runAiScan(undefined, scenarios[currentIdx]);
+                  }}
+                  className="px-2 py-1 rounded-lg bg-[#7C3AED]/30 border border-[#7C3AED]/50 text-[#A78BFA] text-[10px] font-bold hover:bg-[#7C3AED]/40"
+                  title="Simulate edge scenario"
+                >
+                  Test AI Edge
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Tap-to-Scan Item Targets */}
+          {/* Subtitle Instruction */}
+          <div className="px-6 py-2 text-center">
+            <p className="text-[11px] text-white/70 font-medium">
+              Point your camera at a product and let AI identify it instantly.
+            </p>
+          </div>
+
+          {/* Camera Viewfinder with AI Detection Overlay */}
+          <div className="flex-1 flex flex-col items-center justify-center p-4">
+            <div className="relative w-64 h-64 rounded-3xl border-2 border-white/20 bg-white/5 flex items-center justify-center overflow-hidden shadow-2xl">
+              {/* AI Corner marks */}
+              <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-[#7C3AED] rounded-tl-xl" />
+              <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-[#7C3AED] rounded-tr-xl" />
+              <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-[#7C3AED] rounded-bl-xl" />
+              <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-[#7C3AED] rounded-br-xl" />
+
+              {/* Animated AI Neural Laser Pulse */}
+              {(aiScanStatus === 'idle' || aiScanStatus === 'analyzing') && (
+                <div className="absolute inset-x-4 h-0.5 bg-gradient-to-r from-transparent via-[#7C3AED] via-[#5EEAD4] to-transparent animate-pulse shadow-[0_0_12px_#7C3AED]" />
+              )}
+
+              {/* Status messaging inside viewfinder */}
+              <div className="text-center p-4 z-10">
+                {aiScanStatus === 'analyzing' ? (
+                  <div className="flex flex-col items-center animate-in fade-in">
+                    <div className="w-8 h-8 border-2 border-[#5EEAD4] border-t-transparent rounded-full animate-spin mb-3" />
+                    <span className="px-3 py-1 rounded-full bg-black/70 border border-[#7C3AED]/40 text-xs font-bold text-white flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      Analyzing product...
+                    </span>
+                  </div>
+                ) : aiScanStatus === 'detected' && aiDetectedProduct ? (
+                  <div className="flex flex-col items-center animate-in zoom-in-95">
+                    <div className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-[10px] font-bold mb-2 flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Product detected · {Math.round((aiDetectedProduct.confidence || 0.96) * 100)}% confidence
+                    </div>
+                    <span className="text-4xl mb-1">{aiDetectedProduct.emoji}</span>
+                    <span className="text-sm font-bold text-white leading-tight">{aiDetectedProduct.name}</span>
+                    <span className="text-xs text-amber-400 font-bold mt-0.5">₹{aiDetectedProduct.price}</span>
+                  </div>
+                ) : aiScanStatus === 'lowConfidence' ? (
+                  <div className="flex flex-col items-center animate-in fade-in max-w-[200px]">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mb-2">
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <p className="text-[11px] font-bold text-white">Product recognition confidence is low.</p>
+                    <p className="text-[10px] text-white/70 mt-0.5">Move closer or improve lighting.</p>
+                    <button
+                      onClick={() => runAiScan('101')}
+                      className="mt-2.5 px-3 py-1 bg-amber-500 text-black font-bold text-[10px] rounded-lg"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : aiScanStatus === 'multiple' ? (
+                  <div className="flex flex-col items-center animate-in fade-in max-w-[200px]">
+                    <div className="w-8 h-8 rounded-full bg-[#7C3AED]/20 text-[#A78BFA] flex items-center justify-center mb-2">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <p className="text-[11px] font-bold text-white">Multiple products detected</p>
+                    <p className="text-[10px] text-white/70 mt-0.5">Please focus on one product.</p>
+                    <button
+                      onClick={() => runAiScan('101')}
+                      className="mt-2.5 px-3 py-1 bg-[#0F766E] text-white font-bold text-[10px] rounded-lg"
+                    >
+                      Re-focus
+                    </button>
+                  </div>
+                ) : aiScanStatus === 'unrecognized' ? (
+                  <div className="flex flex-col items-center animate-in fade-in max-w-[200px]">
+                    <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mb-2">
+                      <X className="w-5 h-5" />
+                    </div>
+                    <p className="text-[11px] font-bold text-white">Product not clearly recognized</p>
+                    <div className="mt-2.5 flex items-center gap-1.5">
+                      <button
+                        onClick={() => runAiScan('101')}
+                        className="px-2.5 py-1 bg-[#0F766E] text-white font-bold text-[10px] rounded-lg"
+                      >
+                        Try Again
+                      </button>
+                      <button
+                        onClick={() => setIsManualSearchOpen(true)}
+                        className="px-2.5 py-1 bg-white/10 text-white font-bold text-[10px] rounded-lg border border-white/20"
+                      >
+                        Search Manually
+                      </button>
+                    </div>
+                  </div>
+                ) : aiScanStatus === 'networkError' ? (
+                  <div className="flex flex-col items-center animate-in fade-in max-w-[200px]">
+                    <div className="w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center mb-2">
+                      <AlertCircle className="w-5 h-5" />
+                    </div>
+                    <p className="text-[11px] font-bold text-white">Unable to connect to ShopGenie AI.</p>
+                    <button
+                      onClick={() => runAiScan('101')}
+                      className="mt-2.5 px-3 py-1 bg-[#0F766E] text-white font-bold text-[10px] rounded-lg"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : aiScanStatus === 'permissionDenied' ? (
+                  <div className="flex flex-col items-center animate-in fade-in max-w-[200px]">
+                    <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mb-2">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <p className="text-[11px] font-bold text-white">Camera permission denied</p>
+                    <p className="text-[10px] text-white/70 mt-0.5">Please grant camera access in settings.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <Sparkles className="w-8 h-8 mx-auto text-white/30 mb-2" />
+                    <p className="text-[11px] text-white/80 font-medium">Hold steady to identify product</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tap-to-Scan Simulated Target Items */}
           <div className="bg-[#141C1A] p-4 rounded-t-3xl border-t border-white/10">
-            <div className="text-[11px] font-bold text-white/70 uppercase tracking-wider mb-2">
-              Tap Item to Simulate Barcode Scan
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-white/70 uppercase tracking-wider">
+                Tap Item to Simulate AI Product Scan
+              </span>
+              <button
+                onClick={() => setIsManualSearchOpen(true)}
+                className="text-[11px] text-[#5EEAD4] font-semibold hover:underline flex items-center gap-1"
+              >
+                <Search className="w-3 h-3" />
+                <span>Manual Search</span>
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {SAMPLE_PRODUCTS.slice(0, 4).map(product => (
                 <button
                   key={product.id}
-                  onClick={() => handleAddToCart(product)}
+                  onClick={() => runAiScan(product.id)}
                   className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-left hover:bg-white/10 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{product.emoji}</span>
                     <div>
                       <div className="text-[11px] font-bold text-white truncate max-w-[80px]">{product.name}</div>
-                      <div className="text-[10px] text-amber-400 font-bold">${product.price.toFixed(2)}</div>
+                      <div className="text-[10px] text-amber-400 font-bold">₹{product.price} · {Math.round((product.confidence || 0.96) * 100)}%</div>
                     </div>
                   </div>
-                  <Plus className="w-4 h-4 text-[#5EEAD4]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#5EEAD4]" />
                 </button>
               ))}
             </div>
           </div>
+
+          {/* AI Result Bottom Sheet Modal */}
+          {aiDetectedProduct && aiScanStatus === 'detected' && (
+            <div className="absolute inset-x-0 bottom-0 bg-[#141C1A] rounded-t-3xl p-5 border-t border-white/15 shadow-2xl z-30 animate-in slide-in-from-bottom duration-200">
+              <div className="flex items-center justify-between mb-3">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/40 text-[#A78BFA] text-[10px] font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  AI Confidence: {Math.round((aiDetectedProduct.confidence || 0.96) * 100)}%
+                </span>
+                <button onClick={() => setAiDetectedProduct(null)} className="text-slate-400 hover:text-white p-1">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#0F766E]/20 border border-[#0F766E]/40 flex items-center justify-center text-3xl">
+                  {aiDetectedProduct.emoji}
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-white">{aiDetectedProduct.name}</div>
+                  <div className="text-xs text-slate-300 mt-0.5">Brand: {aiDetectedProduct.brand || 'Verified Brand'}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    Category: {aiDetectedProduct.category} · Size: {aiDetectedProduct.size || 'Standard'}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-base font-extrabold text-amber-400">₹{aiDetectedProduct.price}</div>
+                  <div className="text-[10px] text-slate-400">Estimated Price</div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  handleAddToCart(aiDetectedProduct);
+                  setAiDetectedProduct(null);
+                  setAiScanStatus('idle');
+                }}
+                className="w-full py-3 rounded-2xl bg-[#0F766E] hover:bg-[#115E59] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Add to Smart Bag</span>
+              </button>
+            </div>
+          )}
+
+          {/* Manual Search Modal */}
+          {isManualSearchOpen && (
+            <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-xs flex flex-col justify-end">
+              <div className="bg-[#141C1A] rounded-t-3xl p-5 border-t border-white/20 space-y-3 animate-in slide-in-from-bottom duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-[#5EEAD4]" />
+                    <span className="text-xs font-bold text-white">Search Product Manually</span>
+                  </div>
+                  <button onClick={() => setIsManualSearchOpen(false)} className="text-xs text-slate-400 hover:text-white">Cancel</button>
+                </div>
+                <input
+                  type="text"
+                  value={manualSearchQuery}
+                  onChange={e => setManualSearchQuery(e.target.value)}
+                  placeholder="e.g. Coca-Cola, Lay's, Amul Milk..."
+                  className="w-full px-3 py-2.5 rounded-xl bg-white/10 border border-white/15 text-xs text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#0F766E]"
+                  autoFocus
+                />
+                <div className="max-h-48 overflow-y-auto space-y-1.5">
+                  {SAMPLE_PRODUCTS.filter(p => !manualSearchQuery || p.name.toLowerCase().includes(manualSearchQuery.toLowerCase())).map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setIsManualSearchOpen(false);
+                        runAiScan(p.id);
+                      }}
+                      className="w-full p-2 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{p.emoji}</span>
+                        <div>
+                          <div className="text-xs font-bold text-white">{p.name}</div>
+                          <div className="text-[10px] text-slate-400">{p.brand} · ₹{p.price}</div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-[#5EEAD4] font-bold">Select</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : activeTab === 'search' ? (
         /* ========================================================= */
@@ -738,14 +1026,14 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
                         <span className="text-xl">{p.emoji}</span>
                         <div>
                           <div className="text-xs font-bold">{p.name}</div>
-                          <div className="text-[10px] text-[#0F766E] font-bold">${p.price.toFixed(2)}</div>
+                          <div className="text-[10px] text-[#0F766E] font-bold">₹{p.price}</div>
                         </div>
                       </div>
                       <button
                         onClick={() => handleAddToCart(p)}
                         className="px-2.5 py-1 bg-[#0F766E] text-white rounded-lg text-xs font-bold"
                       >
-                        Add
+                        Add to Bag
                       </button>
                     </div>
                   ))}
@@ -756,106 +1044,99 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
         </div>
       ) : activeTab === 'cart' ? (
         /* ========================================================= */
-        /* CART / BAG SCREEN                                         */
+        /* SMART BAG SCREEN (Zero Checkout / Zero Payment)            */
         /* ========================================================= */
         <div className="flex-1 flex flex-col pt-10 overflow-y-auto pb-16">
           <div className="bg-white dark:bg-[#141C1A] px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Your Shopping Bag ({totalCartCount})</h2>
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-[#0F766E]" />
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Smart Bag ({totalCartCount})</h2>
+            </div>
             {cart.length > 0 && (
               <button
                 onClick={() => setCart([])}
-                className="text-xs text-red-500 font-bold hover:underline"
+                className="text-xs text-red-500 font-bold hover:underline flex items-center gap-1"
               >
-                Clear
+                <Trash2 className="w-3 h-3" />
+                <span>Clear Bag</span>
               </button>
             )}
           </div>
 
-          {showExitPass ? (
-            <div className="p-4 flex flex-col items-center text-center">
-              <div className="bg-white dark:bg-[#141C1A] p-6 rounded-3xl border-2 border-emerald-500/40 shadow-xl max-w-xs w-full">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Payment Confirmed</div>
-                <div className="text-xs text-slate-500 mb-4">Scan at Store Exit Gate</div>
-                <div className="w-40 h-40 mx-auto p-2 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center">
-                  <QrCode className="w-28 h-28 text-slate-800 dark:text-white" />
-                  <span className="text-[10px] font-mono font-bold text-slate-500 mt-1">#SG-PASS-8942</span>
-                </div>
-                <div className="mt-4 text-xs font-bold text-[#0F766E]">${totalPayable.toFixed(2)} Paid · Valid 15 mins</div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowExitPass(false);
-                  setCart([]);
-                  setActiveTab('home');
-                }}
-                className="mt-4 px-4 py-2 bg-[#0F766E] text-white rounded-xl text-xs font-bold"
-              >
-                Done & Return Home
-              </button>
-            </div>
-          ) : cart.length === 0 ? (
+          {/* Smart Bag Purpose Description Ribbon */}
+          <div className="bg-[#7C3AED]/10 dark:bg-[#7C3AED]/15 px-4 py-2.5 border-b border-[#7C3AED]/20 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#7C3AED] shrink-0" />
+            <p className="text-[11px] text-[#6D28D9] dark:text-[#C4B5FD] font-medium leading-snug">
+              A temporary shopping list that helps customers keep track of products they have discovered while shopping.
+            </p>
+          </div>
+
+          {cart.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-3">
                 <ShoppingBag className="w-8 h-8" />
               </div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Your bag is empty</div>
-              <p className="text-xs text-slate-500 mt-1">Scan aisle barcodes or add items from verified shops</p>
+              <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Your Smart Bag is empty</div>
+              <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                A temporary shopping list that helps customers keep track of products they have discovered while shopping.
+              </p>
               <button
                 onClick={() => setActiveTab('scan')}
-                className="mt-4 px-4 py-2 bg-[#0F766E] text-white rounded-xl text-xs font-bold"
+                className="mt-4 px-4 py-2 bg-[#0F766E] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
               >
-                Start Scanning
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Scan Products with AI</span>
               </button>
             </div>
           ) : (
             <div className="p-4 flex-1 flex flex-col justify-between">
               <div className="space-y-2 mb-4">
                 {cart.map(item => (
-                  <div key={item.id} className="p-3 bg-white dark:bg-[#141C1A] rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                  <div key={item.id} className="p-3 bg-white dark:bg-[#141C1A] rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-2xs">
                     <div className="flex items-center gap-2.5">
                       <span className="text-2xl">{item.emoji}</span>
                       <div>
                         <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[140px]">{item.name}</div>
-                        <div className="text-[11px] text-slate-500">${item.price.toFixed(2)} each</div>
+                        <div className="text-[11px] text-slate-500">₹{item.price} each {item.brand ? `· ${item.brand}` : ''}</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-                      <button onClick={() => handleDecrement(item.id)} className="w-6 h-6 flex items-center justify-center font-bold text-xs">-</button>
-                      <span className="text-xs font-bold">{item.quantity}</span>
-                      <button onClick={() => handleIncrement(item.id)} className="w-6 h-6 flex items-center justify-center font-bold text-xs">+</button>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-[#0F766E]">₹{item.price * item.quantity}</span>
+                      <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+                        <button onClick={() => handleDecrement(item.id)} className="w-6 h-6 flex items-center justify-center font-bold text-xs">-</button>
+                        <span className="text-xs font-bold">{item.quantity}</span>
+                        <button onClick={() => handleIncrement(item.id)} className="w-6 h-6 flex items-center justify-center font-bold text-xs">+</button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Bill Summary */}
-              <div className="bg-white dark:bg-[#141C1A] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-                <div className="flex justify-between text-slate-500">
-                  <span>Subtotal</span>
-                  <span className="font-bold">${subtotal.toFixed(2)}</span>
+              {/* Bill Summary - Pure Selection & Estimated Total */}
+              <div className="bg-white dark:bg-[#141C1A] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 text-xs shadow-xs">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-bold text-sm text-slate-800 dark:text-slate-100">Estimated Total</div>
+                    <div className="text-[10px] text-slate-400">{totalCartCount} products selected</div>
+                  </div>
+                  <span className="text-xl font-extrabold text-[#0F766E]">₹{estimatedTotal}</span>
                 </div>
-                <div className="flex justify-between text-slate-500">
-                  <span>Estimated Tax (5%)</span>
-                  <span>${tax.toFixed(2)}</span>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveTab('scan')}
+                    className="flex-1 py-3 bg-[#0F766E] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs hover:bg-[#115E59] active:scale-95 transition-all text-xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Continue Scanning</span>
+                  </button>
+                  <button
+                    onClick={() => setCart([])}
+                    className="px-4 py-3 border border-red-200 dark:border-red-900/50 text-red-500 rounded-xl font-bold hover:bg-red-50 dark:hover:bg-red-950/20 active:scale-95 transition-all text-xs"
+                  >
+                    Clear Bag
+                  </button>
                 </div>
-                <div className="flex justify-between text-emerald-600 font-semibold">
-                  <span>Genie Discount</span>
-                  <span>-${discount.toFixed(2)}</span>
-                </div>
-                <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex justify-between font-bold text-sm">
-                  <span>Total Payable</span>
-                  <span className="text-[#0F766E]">${totalPayable.toFixed(2)}</span>
-                </div>
-                <button
-                  onClick={() => setShowExitPass(true)}
-                  className="w-full mt-3 py-3 bg-[#0F766E] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-md hover:bg-[#115E59]"
-                >
-                  <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  <span>1-Tap Express Pay</span>
-                </button>
               </div>
             </div>
           )}
@@ -988,12 +1269,12 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
 
               <button
                 onClick={() => setActiveTab('scan')}
-                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-200/70 shadow-2xs hover:border-indigo-300 hover:shadow-xs transition-all group"
+                className="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-200/70 shadow-2xs hover:border-purple-300 hover:shadow-xs transition-all group"
               >
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1 group-hover:scale-105 transition-transform">
-                  <QrCode className="w-5 h-5 stroke-[2]" />
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-1 group-hover:scale-105 transition-transform">
+                  <Sparkles className="w-5 h-5 stroke-[2]" />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700">Scan</span>
+                <span className="text-[11px] font-semibold text-slate-700">AI Scan</span>
               </button>
             </div>
 
@@ -1101,8 +1382,8 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
                       )}
                       {store.selfCheckout && (
                         <div className="flex items-center gap-1 text-[10px] font-bold text-[#0F766E] mt-1">
-                          <Zap className="w-3 h-3 fill-current" />
-                          <span>Self Scan & Go Enabled</span>
+                          <Sparkles className="w-3 h-3 fill-current" />
+                          <span>AI Product Scan Enabled</span>
                         </div>
                       )}
                     </div>
@@ -1154,7 +1435,7 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
               <span className="text-[10px] mt-0.5">Map</span>
             </button>
 
-            {/* 3. Center Floating Scan & Pay */}
+            {/* 3. Center Floating AI Scan */}
             <div className="flex flex-col items-center -mt-6">
               <button
                 onClick={() => {
@@ -1164,14 +1445,14 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
                 }}
                 className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
                   activeTab === 'scan'
-                    ? 'bg-amber-500 text-slate-950 ring-4 ring-amber-500/30'
+                    ? 'bg-[#7C3AED] text-white ring-4 ring-[#7C3AED]/30'
                     : 'bg-gradient-to-tr from-[#0F766E] to-[#14B8A6] text-white ring-4 ring-white dark:ring-[#141C1A]'
                 }`}
               >
-                <QrCode className="w-5 h-5" />
+                <Sparkles className="w-5 h-5" />
               </button>
               <span className="text-[10px] font-bold text-[#0F766E] dark:text-[#5EEAD4] mt-0.5">
-                Scan & Pay
+                AI Scan
               </span>
             </div>
 
@@ -1192,7 +1473,7 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
               <span className="text-[10px] mt-0.5">Search</span>
             </button>
 
-            {/* 5. Cart */}
+            {/* 5. Smart Bag */}
             <button
               onClick={() => {
                 setSelectedStore(null);
@@ -1213,7 +1494,7 @@ export const FlutterAppSimulator: React.FC<FlutterAppSimulatorProps> = ({
                   </span>
                 )}
               </div>
-              <span className="text-[10px] mt-0.5">Cart</span>
+              <span className="text-[10px] mt-0.5">Smart Bag</span>
             </button>
           </div>
         </div>

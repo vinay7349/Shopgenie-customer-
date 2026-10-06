@@ -385,8 +385,8 @@ class _MapScreenState extends State<MapScreen> {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: widget.onOpenScanner,
-                                icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
-                                label: const Text('Scan in Store', style: TextStyle(fontSize: 12)),
+                                icon: const Icon(Icons.auto_awesome, size: 16),
+                                label: const Text('AI Product Scan', style: TextStyle(fontSize: 12)),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.genieTeal,
                                   side: const BorderSide(color: AppColors.genieTeal),

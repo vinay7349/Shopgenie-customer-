@@ -321,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value: true,
               onChanged: (v) {},
               title: const Text('Push Notifications', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-              subtitle: const Text('Receive checkout and order alerts', style: TextStyle(fontSize: 11)),
+              subtitle: const Text('Receive product discovery and store alerts', style: TextStyle(fontSize: 11)),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -644,7 +644,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text('CUSTOMER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2563EB))),
                 ],
               ),
-              subtitle: const Text('Local shopping, scan & pay, and exit pass generation', style: TextStyle(fontSize: 11)),
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(8)),
@@ -678,7 +677,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   iconBg: const Color(0xFFE0F2FE),
                   iconColor: const Color(0xFF0284C7),
                   title: 'Help & Support',
-                  subtitle: 'FAQ, self-checkout guides, customer care',
+                  subtitle: 'FAQ, AI scanning guides, customer care',
                   onTap: () {},
                 ),
                 const Divider(height: 1, indent: 64),

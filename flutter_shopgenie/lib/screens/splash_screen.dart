@@ -225,7 +225,7 @@ class _SplashScreenState extends State<SplashScreen>
                 left: 0,
                 right: 0,
                 child: Text(
-                  'Hyperlocal Commerce & Express Checkout',
+                  'Hyperlocal Commerce & AI Product Scan',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontSize: 11,

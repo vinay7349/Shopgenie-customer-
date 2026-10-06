@@ -107,20 +107,20 @@ class _SearchScreenState extends State<SearchScreen> {
                 // Filters row
                 Row(
                   children: [
-                    // Self Checkout toggle
+                    // AI Product Scan filter toggle
                     FilterChip(
-                      label: const Text('⚡ Self-Checkout Only', style: TextStyle(fontSize: 11)),
+                      label: const Text('✨ AI Product Scan', style: TextStyle(fontSize: 11)),
                       selected: _selfCheckoutOnly,
                       onSelected: (val) {
                         setState(() {
                           _selfCheckoutOnly = val;
                         });
                       },
-                      selectedColor: AppColors.genieTeal.withValues(alpha: 0.18),
-                      checkmarkColor: AppColors.genieTeal,
+                      selectedColor: AppColors.aiViolet.withValues(alpha: 0.18),
+                      checkmarkColor: AppColors.aiViolet,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       side: BorderSide(
-                        color: _selfCheckoutOnly ? AppColors.genieTeal : Colors.grey.withValues(alpha: 0.3),
+                        color: _selfCheckoutOnly ? AppColors.aiViolet : Colors.grey.withValues(alpha: 0.3),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -187,7 +187,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         leading: Text(p.emoji, style: const TextStyle(fontSize: 26)),
                         title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         subtitle: Text(
-                          '${p.storeName} · \$${p.price.toStringAsFixed(2)}',
+                          '${p.storeName} · ₹${p.price.toStringAsFixed(0)}',
                           style: const TextStyle(fontSize: 11, color: AppColors.genieTeal),
                         ),
                         trailing: ElevatedButton(
@@ -199,12 +199,11 @@ class _SearchScreenState extends State<SearchScreen> {
                                 name: p.name,
                                 price: p.price,
                                 emoji: p.emoji,
-                                barcode: p.barcode,
                               ),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Added ${p.name} to cart!'),
+                                content: Text('Added ${p.name} to Smart Bag!'),
                                 duration: const Duration(seconds: 1),
                                 backgroundColor: AppColors.genieTeal,
                               ),

@@ -21,11 +21,11 @@ const List<OnboardingStep> onboardingSteps = [
     iconEmoji: '🏪',
   ),
   OnboardingStep(
-    title: 'Self Scan & Express Pay',
+    title: 'AI Product Scan',
     subtitle:
-        'Scan barcodes as you pick items from aisles. Skip the checkout queue with frictionless in-app payment.',
-    highlightBadge: 'Zero-Wait Checkout',
-    iconEmoji: '📱',
+        'Point your camera at a product and let AI identify it instantly. Keep track of discovered items in your Smart Bag.',
+    highlightBadge: 'AI Vision Powered',
+    iconEmoji: '✨',
   ),
   OnboardingStep(
     title: 'Genie Community Perks',

@@ -116,6 +116,48 @@ const mockDjangoApiPlugin = (): Plugin => ({
         return;
       }
 
+      if (cleanUrl === '/api/products/recognize' || cleanUrl === '/api/products/recognize/') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            const targetId = data.productId || data.id;
+            let product = INITIAL_PRODUCTS.find(p => p.id === targetId);
+            if (!product) {
+              product = {
+                id: '101',
+                name: 'Coca-Cola 500ml',
+                brand: 'Coca-Cola',
+                category: 'Beverages',
+                size: '500 ml',
+                price: 40,
+                image: '',
+                confidence: 0.96
+              } as any;
+            }
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: true,
+              product: {
+                id: product.id,
+                name: product.name,
+                brand: (product as any).brand || 'Coca-Cola',
+                category: product.category || 'Beverages',
+                size: (product as any).size || '500 ml',
+                price: product.price || 40,
+                image: (product as any).image || '',
+                confidence: (product as any).confidence || 0.96
+              }
+            }));
+          } catch {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ success: false, error: 'Invalid JSON request' }));
+          }
+        });
+        return;
+      }
+
       if (cleanUrl === '/api/offers') {
         res.end(JSON.stringify(INITIAL_OFFERS));
         return;

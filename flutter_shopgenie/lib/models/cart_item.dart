@@ -1,21 +1,4 @@
-class CartItem {
-  final String id;
-  final String storeId;
-  final String name;
-  final double price;
-  final String emoji;
-  final String barcode;
-  int quantity;
+import 'smart_bag_item.dart';
 
-  CartItem({
-    required this.id,
-    required this.storeId,
-    required this.name,
-    required this.price,
-    required this.emoji,
-    required this.barcode,
-    this.quantity = 1,
-  });
-
-  double get totalPrice => price * quantity;
-}
+/// Legacy alias for SmartBagItem to maintain compatibility with existing widgets.
+typedef CartItem = SmartBagItem;

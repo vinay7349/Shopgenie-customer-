@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Welcome to Rajarajeshwari Nagar! 12 neighbourhood shops enabled for instant Scan & Go.',
+                      'Welcome to Rajarajeshwari Nagar! 12 neighbourhood shops enabled for instant AI Product Scan.',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF)),
                     ),
                   ),

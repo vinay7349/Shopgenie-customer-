@@ -753,8 +753,8 @@ export const ShopperDeckView: React.FC<ShopperDeckViewProps> = ({
                     )}
                     {store.selfCheckout && (
                       <div className="flex items-center gap-1 text-[10px] font-bold text-[#0F766E] mt-1">
-                        <Zap className="w-3 h-3 fill-current" />
-                        <span>Self Scan & Go Enabled</span>
+                        <Sparkles className="w-3 h-3 fill-current" />
+                        <span>AI Product Scan Enabled</span>
                       </div>
                     )}
                   </div>

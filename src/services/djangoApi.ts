@@ -110,6 +110,26 @@ class DjangoApiService {
   }
 
   /**
+   * AI Product Recognition in Django REST API
+   * POST /api/products/recognize/
+   */
+  async recognizeProduct(data: { image?: string; productId?: string }): Promise<{ success: boolean; product?: any; message?: string }> {
+    try {
+      const res = await fetch(`${this.baseUrl}/products/recognize/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        return { success: false, message: 'Unable to connect to ShopGenie AI.' };
+      }
+      return await res.json();
+    } catch (err) {
+      return { success: false, message: (err as Error).message };
+    }
+  }
+
+  /**
    * Barcode instant lookup in Django
    */
   async lookupBarcode(barcode: string, shopId?: string): Promise<{ found: boolean; product?: Product; message?: string }> {

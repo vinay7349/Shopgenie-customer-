@@ -42,7 +42,7 @@ class CustomBottomNavBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // 1. Home Tab
+              // 1. Home / Explore Tab
               _buildNavItem(
                 context: context,
                 index: 0,
@@ -59,7 +59,7 @@ class CustomBottomNavBar extends StatelessWidget {
                 hasPulseDot: true,
               ),
 
-              // 3. Scan & Pay Center Floating Button
+              // 3. AI Scan Center Floating Button
               _buildCenterScanButton(context),
 
               // 4. Search Tab
@@ -70,12 +70,12 @@ class CustomBottomNavBar extends StatelessWidget {
                 label: 'Search',
               ),
 
-              // 5. Cart Tab with Badge
+              // 5. Smart Bag Tab with Badge
               _buildNavItem(
                 context: context,
                 index: 4,
                 icon: Icons.shopping_bag_rounded,
-                label: 'Cart',
+                label: 'Smart Bag',
                 badgeCount: cartCount,
               ),
             ],
@@ -187,7 +187,7 @@ class CustomBottomNavBar extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: isSelected
                       ? const LinearGradient(
-                          colors: [AppColors.sparkAmber, Color(0xFFD97706)],
+                          colors: [AppColors.aiViolet, AppColors.aiVioletDark],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -198,7 +198,7 @@ class CustomBottomNavBar extends StatelessWidget {
                         ),
                   boxShadow: [
                     BoxShadow(
-                      color: (isSelected ? AppColors.sparkAmber : AppColors.genieTeal)
+                      color: (isSelected ? AppColors.aiViolet : AppColors.genieTeal)
                           .withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
@@ -211,15 +211,15 @@ class CustomBottomNavBar extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.qr_code_scanner_rounded,
-                    color: isSelected ? Colors.black : Colors.white,
-                    size: 28,
+                    Icons.auto_awesome,
+                    color: isSelected ? Colors.white : Colors.white,
+                    size: 26,
                   ),
                 ),
               ),
               const SizedBox(height: 2),
               const Text(
-                'Scan & Pay',
+                'AI Scan',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,

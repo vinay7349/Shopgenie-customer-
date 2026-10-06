@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/cart_item.dart';
+import '../models/smart_bag_item.dart';
 import '../models/store_item.dart';
 import '../models/user_role.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
@@ -28,53 +28,71 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   UserRole _userRole = UserRole.shopper;
-  int _currentTab = 0; // 0: Home, 1: Map, 2: Scan & Pay, 3: Search, 4: Cart
+  int _currentTab = 0; // 0: Home, 1: Map, 2: AI Scan, 3: Search, 4: Smart Bag
   String _currentLocation = 'Rajarajeshwari Nagar, Bengaluru';
   StoreItem? _selectedStore;
   int? _activeFeedTab; // null if not in feed, 0: Feed, 1: Offers, 2: Following
   bool _isProfileOpen = false;
 
-  final List<CartItem> _cartItems = [
-    CartItem(
-      id: 'p1',
+  final List<SmartBagItem> _cartItems = [
+    SmartBagItem(
+      id: '101',
       storeId: '1',
-      name: 'Organic Hass Avocado (2 pack)',
-      price: 3.49,
-      emoji: '🥑',
-      barcode: '8901234567890',
+      name: 'Coca-Cola 500ml',
+      brand: 'Coca-Cola',
+      category: 'Beverages',
+      size: '500 ml',
+      price: 40.0,
+      emoji: '🥤',
+      confidence: 0.96,
       quantity: 1,
     ),
-    CartItem(
-      id: 'p2',
+    SmartBagItem(
+      id: '102',
       storeId: '1',
-      name: 'Farm Fresh Almond Milk 1L',
-      price: 2.89,
+      name: "Lay's Classic",
+      brand: "Lay's",
+      category: 'Snacks',
+      size: '50 g',
+      price: 20.0,
+      emoji: '🥔',
+      confidence: 0.98,
+      quantity: 1,
+    ),
+    SmartBagItem(
+      id: '103',
+      storeId: '1',
+      name: 'Amul Milk 1L',
+      brand: 'Amul',
+      category: 'Dairy',
+      size: '1 L',
+      price: 65.0,
       emoji: '🥛',
-      barcode: '8901234567891',
+      confidence: 0.94,
       quantity: 1,
     ),
   ];
 
   int get _cartCount => _cartItems.fold(0, (sum, i) => sum + i.quantity);
 
-  void _onAddToCart(CartItem newItem) {
+  void _onAddToCart(SmartBagItem newItem) {
     setState(() {
-      final idx = _cartItems.indexWhere((i) => i.id == newItem.id || i.barcode == newItem.barcode);
+      final idx = _cartItems.indexWhere((i) => i.id == newItem.id);
       if (idx >= 0) {
-        _cartItems[idx].quantity += 1;
+        _cartItems[idx].quantity += newItem.quantity;
       } else {
         _cartItems.add(newItem);
       }
     });
   }
 
-  void _incrementCartItem(CartItem item) {
+  void _incrementCartItem(SmartBagItem item) {
     setState(() {
       item.quantity += 1;
     });
   }
 
-  void _decrementCartItem(CartItem item) {
+  void _decrementCartItem(SmartBagItem item) {
     setState(() {
       if (item.quantity > 1) {
         item.quantity -= 1;
@@ -104,10 +122,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onStartScan: () {
           setState(() {
             _selectedStore = null;
-            _currentTab = 2; // switch to Scan & Pay
+            _currentTab = 2; // switch to AI Scan
           });
         },
-        onAddToCart: _onAddToCart,
+        onAddToCart: (item) {
+          _onAddToCart(item);
+        },
       );
     }
 
@@ -153,7 +173,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       );
     }
 
-    // 3. Main 5-Tab Shopper View
+    // 2. Main 5-Tab Shopper View
     Widget bodyContent;
     switch (_currentTab) {
       case 0:
@@ -177,7 +197,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           onOpenScanner: () {
             setState(() {
-              _currentTab = 2;
+              _currentTab = 2; // AI Scan
             });
           },
           onOpenMap: () {
@@ -223,7 +243,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           onOpenScanner: () {
             setState(() {
-              _currentTab = 2;
+              _currentTab = 2; // AI Scan
             });
           },
         );
@@ -232,9 +252,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       case 2:
         bodyContent = ScanScreen(
           onProductScanned: _onAddToCart,
-          onGoToCart: () {
+          onGoToBag: () {
             setState(() {
-              _currentTab = 4;
+              _currentTab = 4; // Smart Bag
             });
           },
         );
@@ -247,7 +267,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               _selectedStore = store;
             });
           },
-          onAddToCart: _onAddToCart,
+          onAddToCart: (item) {
+            _onAddToCart(item);
+          },
         );
         break;
 
@@ -259,7 +281,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           onClearCart: _clearCart,
           onGoToScan: () {
             setState(() {
-              _currentTab = 2;
+              _currentTab = 2; // AI Scan
             });
           },
         );

@@ -667,9 +667,6 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                       CUSTOMER
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Local shopping, scan & pay, and exit pass generation
-                  </div>
                 </div>
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
