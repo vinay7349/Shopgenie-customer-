@@ -450,7 +450,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Transform.translate(
                         offset: const Offset(0, -28),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.between,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             CircleAvatar(
@@ -503,7 +503,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const Divider(height: 1),
                             const SizedBox(height: 8),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.between,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [

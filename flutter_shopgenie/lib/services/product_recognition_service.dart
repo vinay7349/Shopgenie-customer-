@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import '../models/product.dart';
 import 'shop_service.dart';
 
