@@ -22,13 +22,22 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   StoreItem? _selectedStore;
   String _selectedCategory = 'All';
+  Future<List<StoreItem>>? _shopsFuture;
+  List<StoreItem> _cachedStores = const [];
 
   @override
   void initState() {
     super.initState();
-    if (ShopService.sampleStores.isNotEmpty) {
-      _selectedStore = ShopService.sampleStores.first;
-    }
+    _loadShops();
+  }
+
+  void _loadShops() {
+    setState(() {
+      _shopsFuture = ShopService.fetchShops().then((stores) {
+        if (mounted) setState(() => _cachedStores = stores);
+        return stores;
+      });
+    });
   }
 
   @override
@@ -36,10 +45,14 @@ class _MapScreenState extends State<MapScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final filteredStores = ShopService.filterStores(category: _selectedCategory);
+    final filteredStores = ShopService.filterStores(
+      stores: _cachedStores,
+      category: _selectedCategory,
+    );
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFE2E8F0),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFE2E8F0),
       body: SafeArea(
         child: Stack(
           children: [
@@ -47,7 +60,9 @@ class _MapScreenState extends State<MapScreen> {
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F1715) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF0F1715)
+                      : const Color(0xFFE2E8F0),
                   image: const DecorationImage(
                     image: NetworkImage(
                       'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80',
@@ -68,7 +83,8 @@ class _MapScreenState extends State<MapScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.genieTeal.withValues(alpha: 0.18),
+                              color:
+                                  AppColors.genieTeal.withValues(alpha: 0.18),
                               width: 1.5,
                             ),
                           ),
@@ -81,7 +97,8 @@ class _MapScreenState extends State<MapScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.genieTeal.withValues(alpha: 0.28),
+                              color:
+                                  AppColors.genieTeal.withValues(alpha: 0.28),
                               width: 1.5,
                             ),
                           ),
@@ -105,7 +122,8 @@ class _MapScreenState extends State<MapScreen> {
                                     spreadRadius: 3,
                                   ),
                                 ],
-                                border: Border.all(color: Colors.white, width: 2),
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
                               ),
                               child: const Icon(
                                 Icons.person_pin_circle_rounded,
@@ -115,7 +133,8 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             Container(
                               margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
@@ -140,30 +159,35 @@ class _MapScreenState extends State<MapScreen> {
                       ),
 
                       // Store Markers on Map
-                      _buildStoreMarker(
-                        store: ShopService.sampleStores[0],
-                        topPercent: 0.28,
-                        leftPercent: 0.32,
-                      ),
-                      _buildStoreMarker(
-                        store: ShopService.sampleStores[1],
-                        topPercent: 0.22,
-                        leftPercent: 0.65,
-                      ),
-                      _buildStoreMarker(
-                        store: ShopService.sampleStores[2],
-                        topPercent: 0.42,
-                        leftPercent: 0.20,
-                      ),
-                      _buildStoreMarker(
-                        store: ShopService.sampleStores[3],
-                        topPercent: 0.40,
-                        leftPercent: 0.72,
-                      ),
-                      _buildStoreMarker(
-                        store: ShopService.sampleStores[4],
-                        topPercent: 0.58,
-                        leftPercent: 0.52,
+                      FutureBuilder<List<StoreItem>>(
+                        future: _shopsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.genieTeal,
+                                ),
+                              ),
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return const SizedBox.shrink();
+                          }
+                          final stores = snapshot.data ?? const <StoreItem>[];
+                          // Show up to five markers so the layout stays stable.
+                          final markers = stores.take(5).toList();
+                          return _markerLayer(
+                            markers: markers,
+                            selectedId: _selectedStore?.id,
+                            onSelected: (store) =>
+                                setState(() => _selectedStore = store),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -179,7 +203,8 @@ class _MapScreenState extends State<MapScreen> {
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: isDark ? AppColors.darkSurface : Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -212,7 +237,8 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.genieTeal.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
@@ -248,11 +274,14 @@ class _MapScreenState extends State<MapScreen> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? AppColors.genieTeal
-                                  : (isDark ? AppColors.darkSurface : Colors.white),
+                                  : (isDark
+                                      ? AppColors.darkSurface
+                                      : Colors.white),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
@@ -266,7 +295,9 @@ class _MapScreenState extends State<MapScreen> {
                                 cat,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                   color: isSelected
                                       ? Colors.white
                                       : theme.colorScheme.onSurface,
@@ -294,7 +325,9 @@ class _MapScreenState extends State<MapScreen> {
                     color: isDark ? AppColors.darkSurface : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                      color: isDark
+                          ? AppColors.darkBorder
+                          : const Color(0xFFE2E8F0),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -313,7 +346,8 @@ class _MapScreenState extends State<MapScreen> {
                             width: 52,
                             height: 52,
                             decoration: BoxDecoration(
-                              color: AppColors.genieTeal.withValues(alpha: 0.12),
+                              color:
+                                  AppColors.genieTeal.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             alignment: Alignment.center,
@@ -340,9 +374,11 @@ class _MapScreenState extends State<MapScreen> {
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppColors.sparkAmber.withValues(alpha: 0.15),
+                                        color: AppColors.sparkAmber
+                                            .withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
@@ -361,7 +397,8 @@ class _MapScreenState extends State<MapScreen> {
                                   '${_selectedStore!.category} · ${_selectedStore!.distance}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.65),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -369,7 +406,8 @@ class _MapScreenState extends State<MapScreen> {
                                   _selectedStore!.address,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.45),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -386,27 +424,35 @@ class _MapScreenState extends State<MapScreen> {
                               child: OutlinedButton.icon(
                                 onPressed: widget.onOpenScanner,
                                 icon: const Icon(Icons.auto_awesome, size: 16),
-                                label: const Text('AI Product Scan', style: TextStyle(fontSize: 12)),
+                                label: const Text('AI Product Scan',
+                                    style: TextStyle(fontSize: 12)),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.genieTeal,
-                                  side: const BorderSide(color: AppColors.genieTeal),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  side: const BorderSide(
+                                      color: AppColors.genieTeal),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 10),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                               ),
                             ),
-                          if (_selectedStore!.selfCheckout) const SizedBox(width: 8),
+                          if (_selectedStore!.selfCheckout)
+                            const SizedBox(width: 8),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => widget.onSelectStore(_selectedStore!),
-                              icon: const Icon(Icons.storefront_rounded, size: 16),
-                              label: const Text('Enter Shop', style: TextStyle(fontSize: 12)),
+                              onPressed: () =>
+                                  widget.onSelectStore(_selectedStore!),
+                              icon: const Icon(Icons.storefront_rounded,
+                                  size: 16),
+                              label: const Text('Enter Shop',
+                                  style: TextStyle(fontSize: 12)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.genieTeal,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -425,74 +471,111 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildStoreMarker({
-    required StoreItem store,
-    required double topPercent,
-    required double leftPercent,
+  /// Stable marker positions used when live shops are available. The backend
+  /// does not provide lat/lng, so we place markers on a fixed grid layout.
+  /// When a shop has no coordinates we still render it (no crash) using its
+  /// grid slot; we never invent latitude/longitude values.
+  static const _markerPositions = [
+    (0.28, 0.32),
+    (0.22, 0.65),
+    (0.42, 0.20),
+    (0.40, 0.72),
+    (0.58, 0.52),
+  ];
+
+  Widget _markerLayer({
+    required List<StoreItem> markers,
+    required String? selectedId,
+    required ValueChanged<StoreItem> onSelected,
   }) {
     final size = MediaQuery.of(context).size;
-    final isSelected = _selectedStore?.id == store.id;
-
-    return Positioned(
-      top: size.height * topPercent,
-      left: size.width * leftPercent,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedStore = store;
-          });
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.genieTeal : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected ? Colors.white : AppColors.genieTeal,
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.18),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(store.emoji, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Text(
-                    store.name.split(' ')[0],
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  if (store.selfCheckout) ...[
-                    const SizedBox(width: 3),
-                    Icon(
-                      Icons.bolt_rounded,
-                      size: 13,
-                      color: isSelected ? AppColors.sparkAmber : AppColors.genieTeal,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_drop_down_rounded,
-              size: 20,
-              color: isSelected ? AppColors.genieTeal : Colors.white,
-            ),
-          ],
+    final children = <Widget>[];
+    for (var i = 0; i < markers.length; i++) {
+      final store = markers[i];
+      final pos = _markerPositions[i % _markerPositions.length];
+      final isSelected = selectedId == store.id;
+      children.add(
+        Positioned(
+          top: size.height * pos.$1,
+          left: size.width * pos.$2,
+          child: _StorePin(
+            store: store,
+            isSelected: isSelected,
+            onTap: () => onSelected(store),
+          ),
         ),
+      );
+    }
+    return Stack(children: children);
+  }
+}
+
+class _StorePin extends StatelessWidget {
+  const _StorePin({
+    required this.store,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final StoreItem store;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.genieTeal : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected ? Colors.white : AppColors.genieTeal,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(store.emoji, style: const TextStyle(fontSize: 14)),
+                const SizedBox(width: 4),
+                Text(
+                  store.name.split(' ')[0],
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : Colors.black87,
+                  ),
+                ),
+                if (store.selfCheckout) ...[
+                  const SizedBox(width: 3),
+                  Icon(
+                    Icons.bolt_rounded,
+                    size: 13,
+                    color:
+                        isSelected ? AppColors.sparkAmber : AppColors.genieTeal,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_drop_down_rounded,
+            size: 20,
+            color: isSelected ? AppColors.genieTeal : Colors.white,
+          ),
+        ],
       ),
     );
   }
@@ -505,7 +588,9 @@ class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04)
+      ..color = isDark
+          ? Colors.white.withValues(alpha: 0.04)
+          : Colors.black.withValues(alpha: 0.04)
       ..strokeWidth = 1.0;
 
     const step = 40.0;

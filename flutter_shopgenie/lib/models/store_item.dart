@@ -1,4 +1,4 @@
-class StoreItem {
+﻿class StoreItem {
   final String id;
   final String name;
   final String category;
@@ -75,20 +75,20 @@ class StoreItem {
 
   factory StoreItem.fromJson(Map<String, dynamic> json) {
     return StoreItem(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      category: json['category'] as String,
-      distance: json['distance'] as String,
-      rating: json['rating'] as String,
-      address: json['address'] as String,
-      emoji: json['emoji'] as String,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      category: json['category']?.toString() ?? 'Grocery',
+      distance: json['distance']?.toString() ?? '',
+      rating: _formatRating(json['rating']),
+      address: json['address']?.toString() ?? '',
+      emoji: json['emoji']?.toString() ?? '🛒',
       selfCheckout: json['selfCheckout'] as bool? ?? false,
       offer: json['offer'] as String?,
       description: json['description'] as String?,
       lat: (json['lat'] as num?)?.toDouble() ?? 12.9250,
       lng: (json['lng'] as num?)?.toDouble() ?? 77.5220,
-      hours: json['hours'] as String? ?? '8:00 AM - 10:00 PM',
-      phone: json['phone'] as String? ?? '+91 98450 12091',
+      hours: json['hours']?.toString() ?? json['business_hours']?.toString() ?? '8:00 AM - 10:00 PM',
+      phone: json['phone']?.toString() ?? '+91 98450 12091',
       followers: json['followers'] as int? ?? 384,
       isFollowing: json['isFollowing'] as bool? ?? false,
     );
@@ -113,5 +113,21 @@ class StoreItem {
       'followers': followers,
       'isFollowing': isFollowing,
     };
+  }
+
+  static String _formatRating(dynamic value) {
+    if (value == null) return '4.8 \u2605';
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return '4.8 \u2605';
+      if (trimmed.contains('\u2605')) return trimmed;
+      final parsed = double.tryParse(trimmed);
+      if (parsed != null) return '${parsed.toStringAsFixed(1)} \u2605';
+      return trimmed;
+    }
+    if (value is num) {
+      return '${value.toDouble().toStringAsFixed(1)} \u2605';
+    }
+    return '4.8 \u2605';
   }
 }

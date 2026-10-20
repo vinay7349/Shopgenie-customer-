@@ -9,7 +9,7 @@ class ProductItem {
   final double price;
   final double mrp;
   final String emoji;
-  final int stock;
+  final double stock;
   final String description;
   final bool inStock;
   final double confidence;
@@ -25,7 +25,7 @@ class ProductItem {
     required this.price,
     required this.mrp,
     required this.emoji,
-    this.stock = 10,
+    this.stock = 10.0,
     required this.description,
     this.inStock = true,
     this.confidence = 0.95,

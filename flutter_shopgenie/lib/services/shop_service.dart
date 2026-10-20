@@ -2,6 +2,8 @@ import '../models/store_item.dart';
 import '../models/product_item.dart';
 import '../models/product.dart';
 import '../models/offer_item.dart';
+import 'package:http/http.dart' as http;
+import 'shop_api_service.dart';
 
 class ShopService {
   static const List<String> categories = [
@@ -326,10 +328,12 @@ class ShopService {
   ];
 
   static List<StoreItem> filterStores({
+    List<StoreItem>? stores,
     String query = '',
     String category = 'All',
   }) {
-    return sampleStores.where((store) {
+    final source = stores ?? sampleStores;
+    return source.where((store) {
       final matchesCat = category == 'All' ||
           store.category.toLowerCase().contains(category.toLowerCase());
       final matchesQuery = query.trim().isEmpty ||
@@ -342,5 +346,47 @@ class ShopService {
 
   static List<ProductItem> getProductsForStore(String storeId) {
     return sampleProducts.where((p) => p.storeId == storeId).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Live API integration
+  // ---------------------------------------------------------------------------
+  // These methods delegate to ShopApiService and never fall back to mock data.
+  // Callers are responsible for handling ShopApiException and distinguishing
+  // a genuine empty list from a network failure.
+
+  /// Live shop discovery. Returns an empty list only when the server genuinely
+  /// returns no shops; network or HTTP errors are rethrown as [ShopApiException].
+  static Future<List<StoreItem>> fetchShops({
+    int page = 1,
+    int pageSize = 20,
+    String? category,
+    String? search,
+    http.Client? client,
+  }) async {
+    final api = ShopApiService(client: client);
+    try {
+      return await api.fetchShops(
+        page: page,
+        pageSize: pageSize,
+        category: category,
+        search: search,
+      );
+    } finally {
+      api.close();
+    }
+  }
+
+  /// Live single-shop lookup. Supports integer and string IDs.
+  static Future<StoreItem> fetchShopById(
+    String id, {
+    http.Client? client,
+  }) async {
+    final api = ShopApiService(client: client);
+    try {
+      return await api.fetchShopById(id);
+    } finally {
+      api.close();
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/store_item.dart';
 import '../models/user_role.dart';
+import '../services/shop_api_service.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/location_selector_sheet.dart';
@@ -48,6 +49,32 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  // Live shop discovery state.
+  Future<List<StoreItem>>? _shopsFuture;
+  String? _shopsError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadShops();
+  }
+
+  void _loadShops() {
+    setState(() {
+      _shopsError = null;
+      _shopsFuture = ShopService.fetchShops();
+    });
+  }
+
+  void _retryShops() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _shopsError = null;
+      _shopsFuture = ShopService.fetchShops();
+    });
+  }
 
   @override
   void dispose() {
@@ -146,12 +173,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
-    final filteredStores = ShopService.filterStores(
-      query: _searchQuery,
-      category: _selectedCategory,
-    );
-
     final shortLocation = widget.currentLocation.split(',')[0];
 
     return Scaffold(
@@ -548,55 +569,158 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 12),
 
                   // 7. Store Cards Grid / List
-                  if (filteredStores.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.store_mall_directory_outlined,
-                            size: 48,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No stores found for "$_searchQuery"',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[600],
+                  FutureBuilder<List<StoreItem>>(
+                    future: _shopsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 48.0),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: AppColors.genieTeal,
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Discovering nearby shops...',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Try a different neighbourhood or category filter.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        final isNetwork = isNetworkFailure(snapshot.error!);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkSurface : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isDark ? AppColors.darkBorder : const Color(0xFFFCA5A5),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isNetwork ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
+                                  size: 40,
+                                  color: const Color(0xFFDC2626),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Could not load shops',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  isNetwork
+                                      ? 'Check your connection and try again.'
+                                      : snapshot.error.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: _retryShops,
+                                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                                  label: const Text('Retry'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.genieTeal,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filteredStores.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, idx) {
-                          final store = filteredStores[idx];
-                          return StoreCard(
-                            store: store,
-                            onTap: () => widget.onSelectStore(store),
-                          );
-                        },
-                      ),
-                    ),
+                        );
+                      }
+
+                      final allStores = snapshot.data ?? const <StoreItem>[];
+                      final filteredStores = ShopService.filterStores(
+                        stores: allStores,
+                        query: _searchQuery,
+                        category: _selectedCategory,
+                      );
+
+                      if (filteredStores.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.store_mall_directory_outlined,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No stores found for "$_searchQuery"',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Try a different neighbourhood or category filter.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredStores.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (context, idx) {
+                            final store = filteredStores[idx];
+                            return StoreCard(
+                              store: store,
+                              onTap: () => widget.onSelectStore(store),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
