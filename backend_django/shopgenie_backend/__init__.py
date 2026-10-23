@@ -1,1 +1,0 @@
-# ShopGenie Backend Package
