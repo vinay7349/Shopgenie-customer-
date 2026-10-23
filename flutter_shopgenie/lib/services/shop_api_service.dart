@@ -3,6 +3,8 @@ import 'dart:io' show SocketException, HttpException;
 
 import 'package:http/http.dart' as http;
 
+import '../models/announcement_item.dart';
+import '../models/offer_item.dart';
 import '../models/product_item.dart';
 import '../models/store_item.dart';
 import 'api_config.dart';
@@ -199,6 +201,115 @@ class ShopApiService {
       products.add(ProductItem.fromJson(entry));
     }
     return products;
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /offers/
+  // ---------------------------------------------------------------------------
+  Future<List<OfferItem>> fetchOffers({String? shopId}) async {
+    final query = <String, String>{};
+    if (shopId != null && shopId.trim().isNotEmpty) {
+      query['shop'] = _normalizeId(shopId);
+    }
+    final uri = Uri.parse(ApiConfig.urlWithQuery(
+      ApiConfig.offersEndpoint,
+      queryParameters: query,
+    ));
+
+    final response = await _client.get(uri).timeout(const Duration(seconds: 15));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ShopApiException('Failed to load offers (HTTP ${response.statusCode}).', statusCode: response.statusCode);
+    }
+
+    dynamic decoded = jsonDecode(response.body);
+    List results;
+    if (decoded is Map<String, dynamic> && decoded['results'] is List) {
+      results = decoded['results'] as List;
+    } else if (decoded is List) {
+      results = decoded;
+    } else {
+      results = [];
+    }
+
+    return results
+        .whereType<Map<String, dynamic>>()
+        .map((entry) => OfferItem.fromJson(entry))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /announcements/
+  // ---------------------------------------------------------------------------
+  Future<List<AnnouncementItem>> fetchAnnouncements({String? shopId}) async {
+    final query = <String, String>{};
+    if (shopId != null && shopId.trim().isNotEmpty) {
+      query['shop'] = _normalizeId(shopId);
+    }
+    final uri = Uri.parse(ApiConfig.urlWithQuery(
+      ApiConfig.announcementsEndpoint,
+      queryParameters: query,
+    ));
+
+    final response = await _client.get(uri).timeout(const Duration(seconds: 15));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ShopApiException('Failed to load announcements (HTTP ${response.statusCode}).', statusCode: response.statusCode);
+    }
+
+    dynamic decoded = jsonDecode(response.body);
+    List results;
+    if (decoded is Map<String, dynamic> && decoded['results'] is List) {
+      results = decoded['results'] as List;
+    } else if (decoded is List) {
+      results = decoded;
+    } else {
+      results = [];
+    }
+
+    return results
+        .whereType<Map<String, dynamic>>()
+        .map((entry) => AnnouncementItem.fromJson(entry))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /products/?search=<query>
+  // ---------------------------------------------------------------------------
+  Future<List<ProductItem>> searchProducts(String query, {String? category, String? shopId}) async {
+    final params = <String, String>{};
+    if (query.trim().isNotEmpty) {
+      params['search'] = query.trim();
+    }
+    if (category != null && category.trim().isNotEmpty && category != 'All') {
+      params['category'] = category.trim();
+    }
+    if (shopId != null && shopId.trim().isNotEmpty) {
+      params['shop'] = _normalizeId(shopId);
+    }
+
+    final uri = Uri.parse(ApiConfig.urlWithQuery(
+      ApiConfig.productsEndpoint,
+      queryParameters: params,
+    ));
+
+    final response = await _client.get(uri).timeout(const Duration(seconds: 15));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ShopApiException('Failed to search products (HTTP ${response.statusCode}).', statusCode: response.statusCode);
+    }
+
+    dynamic decoded = jsonDecode(response.body);
+    List results;
+    if (decoded is Map<String, dynamic> && decoded['results'] is List) {
+      results = decoded['results'] as List;
+    } else if (decoded is List) {
+      results = decoded;
+    } else {
+      results = [];
+    }
+
+    return results
+        .whereType<Map<String, dynamic>>()
+        .map((entry) => ProductItem.fromJson(entry))
+        .toList();
   }
 
   void close() => _client.close();

@@ -61,7 +61,7 @@ class ProductItem {
       emoji: '🛍️',
       stock: stock,
       description: description,
-      inStock: stock > 0,
+      inStock: json['is_available'] != null ? json['is_available'] == true : stock > 0,
       confidence: 0.0,
     );
   }

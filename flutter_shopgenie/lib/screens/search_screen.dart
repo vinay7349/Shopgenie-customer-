@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
+import '../models/product_item.dart';
 import '../models/store_item.dart';
+import '../services/shop_api_service.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/store_card.dart';
@@ -8,11 +11,13 @@ import '../widgets/store_card.dart';
 class SearchScreen extends StatefulWidget {
   final Function(StoreItem) onSelectStore;
   final Function(CartItem) onAddToCart;
+  final ShopApiService? apiService;
 
   const SearchScreen({
     super.key,
     required this.onSelectStore,
     required this.onAddToCart,
+    this.apiService,
   });
 
   @override
@@ -21,14 +26,79 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  late final ShopApiService _api;
+  Timer? _debounceTimer;
+
   String _query = '';
   String _selectedCategory = 'All';
   bool _selfCheckoutOnly = false;
+  bool _isSearching = false;
+
+  List<StoreItem> _apiStores = [];
+  List<ProductItem> _apiProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _api = widget.apiService ?? ShopApiService();
+    _triggerSearch();
+  }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
+    if (widget.apiService == null) {
+      _api.close();
+    }
     super.dispose();
+  }
+
+  void _onQueryChanged(String val) {
+    setState(() {
+      _query = val;
+    });
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      _triggerSearch();
+    });
+  }
+
+  Future<void> _triggerSearch() async {
+    if (!mounted) return;
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final futures = await Future.wait([
+        _api.fetchShops(
+          search: _query.isNotEmpty ? _query : null,
+          category: _selectedCategory != 'All' ? _selectedCategory : null,
+        ),
+        _query.isNotEmpty
+            ? _api.searchProducts(
+                _query,
+                category: _selectedCategory != 'All' ? _selectedCategory : null,
+              )
+            : Future.value(<ProductItem>[]),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _apiStores = futures[0] as List<StoreItem>;
+          _apiProducts = futures[1] as List<ProductItem>;
+          _isSearching = false;
+        });
+      }
+    } catch (_) {
+      // If backend network fails, gracefully fall back to local service
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
   }
 
   @override
@@ -36,20 +106,25 @@ class _SearchScreenState extends State<SearchScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    var stores = ShopService.filterStores(
-      query: _query,
-      category: _selectedCategory,
-    );
+    // Use live API stores when available, or fall back to filtered local stores
+    var stores = _apiStores.isNotEmpty || _query.isNotEmpty
+        ? _apiStores
+        : ShopService.filterStores(
+            query: _query,
+            category: _selectedCategory,
+          );
 
     if (_selfCheckoutOnly) {
       stores = stores.where((s) => s.selfCheckout).toList();
     }
 
-    final matchingProducts = ShopService.sampleProducts.where((p) {
-      if (_query.trim().isEmpty) return false;
-      return p.name.toLowerCase().contains(_query.toLowerCase()) ||
-          p.category.toLowerCase().contains(_query.toLowerCase());
-    }).toList();
+    final matchingProducts = _apiProducts.isNotEmpty
+        ? _apiProducts
+        : ShopService.sampleProducts.where((p) {
+            if (_query.trim().isEmpty) return false;
+            return p.name.toLowerCase().contains(_query.toLowerCase()) ||
+                p.category.toLowerCase().contains(_query.toLowerCase());
+          }).toList();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
@@ -77,11 +152,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: TextField(
                     controller: _searchController,
                     autofocus: false,
-                    onChanged: (val) {
-                      setState(() {
-                        _query = val;
-                      });
-                    },
+                    onChanged: _onQueryChanged,
                     decoration: InputDecoration(
                       hintText: 'Search stores, groceries, bakeries...',
                       hintStyle: TextStyle(fontSize: 13, color: Colors.grey[500]),
@@ -91,9 +162,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               icon: const Icon(Icons.clear_rounded, size: 18),
                               onPressed: () {
                                 _searchController.clear();
-                                setState(() {
-                                  _query = '';
-                                });
+                                _onQueryChanged('');
                               },
                             )
                           : null,
@@ -107,9 +176,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 // Filters row
                 Row(
                   children: [
-                    // AI Product Scan filter toggle
                     FilterChip(
-                      label: const Text('✨ AI Product Scan', style: TextStyle(fontSize: 11)),
+                      label: const Text('⚡ AI Product Scan', style: TextStyle(fontSize: 11)),
                       selected: _selfCheckoutOnly,
                       onSelected: (val) {
                         setState(() {
@@ -125,7 +193,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     const SizedBox(width: 8),
 
-                    // Category dropdown chip
+                    // Category dropdown chips
                     Expanded(
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -142,6 +210,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                     setState(() {
                                       _selectedCategory = cat;
                                     });
+                                    _triggerSearch();
                                   }
                                 },
                                 selectedColor: AppColors.genieTeal,
@@ -162,6 +231,13 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
 
+          if (_isSearching)
+            const LinearProgressIndicator(
+              color: AppColors.genieTeal,
+              backgroundColor: Colors.transparent,
+              minHeight: 2,
+            ),
+
           // Search Results List
           Expanded(
             child: ListView(
@@ -170,7 +246,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 // If matching products exist
                 if (matchingProducts.isNotEmpty) ...[
                   Text(
-                    'MATCHING AISLE PRODUCTS (${matchingProducts.length})',
+                    'MATCHING PRODUCTS (${matchingProducts.length})',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -184,10 +260,19 @@ class _SearchScreenState extends State<SearchScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       child: ListTile(
-                        leading: Text(p.emoji, style: const TextStyle(fontSize: 26)),
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.genieTeal.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.shopping_bag_outlined, color: AppColors.genieTeal),
+                        ),
                         title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         subtitle: Text(
-                          '${p.storeName} · ₹${p.price.toStringAsFixed(0)}',
+                          '${p.storeName.isNotEmpty ? "${p.storeName} • " : ""}₹${p.price.toStringAsFixed(0)}',
                           style: const TextStyle(fontSize: 11, color: AppColors.genieTeal),
                         ),
                         trailing: ElevatedButton(
@@ -198,7 +283,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 storeId: p.storeId,
                                 name: p.name,
                                 price: p.price,
-                                emoji: p.emoji,
+                                emoji: '🛍️',
                               ),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -236,7 +321,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                if (stores.isEmpty)
+                if (stores.isEmpty && !_isSearching)
                   Padding(
                     padding: const EdgeInsets.all(32.0),
                     child: Center(

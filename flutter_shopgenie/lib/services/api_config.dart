@@ -51,6 +51,12 @@ class ApiConfig {
   static const String productsRecognizeEndpoint = '/products/recognize/';
 
   // ---------------------------------------------------------------------------
+  // Offers and Announcements endpoints
+  // ---------------------------------------------------------------------------
+  static const String offersEndpoint = '/offers/';
+  static const String announcementsEndpoint = '/announcements/';
+
+  // ---------------------------------------------------------------------------
   // Auth endpoints
   // ---------------------------------------------------------------------------
   static const String authLoginEndpoint = '/auth/login/';
@@ -75,6 +81,6 @@ class ApiConfig {
     final params = queryParameters.entries
         .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
-    return '$fullUrl(endpoint)?$params';
+    return '${fullUrl(endpoint)}?$params';
   }
 }
