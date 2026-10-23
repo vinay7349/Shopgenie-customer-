@@ -192,7 +192,7 @@ void main() {
       );
     });
 
-    test('throws FormatException on malformed JSON', () async {
+    test('throws ShopApiException on malformed JSON for shop list', () async {
       final client = MockHttpClient(
         handler: (request) async {
           final bytes = utf8.encode('not json');
@@ -208,7 +208,7 @@ void main() {
       final service = ShopApiService(client: client);
       expect(
         () => service.fetchShops(),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<ShopApiException>()),
       );
     });
 
@@ -350,6 +350,26 @@ void main() {
       expect(
         () => service.fetchShopById('1'),
         throwsA(predicate<ShopApiException>((e) => e.statusCode == 500)),
+      );
+    });
+
+    test('throws ShopApiException on malformed JSON for shop detail', () async {
+      final client = MockHttpClient(
+        handler: (request) async {
+          final bytes = utf8.encode('not json');
+          return http.StreamedResponse(
+            Stream.fromIterable([bytes]),
+            200,
+            headers: {'content-type': 'application/json'},
+            contentLength: bytes.length,
+          );
+        },
+      );
+
+      final service = ShopApiService(client: client);
+      expect(
+        () => service.fetchShopById('1'),
+        throwsA(isA<ShopApiException>()),
       );
     });
 

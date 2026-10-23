@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/store_item.dart';
+import '../services/shop_api_service.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
 
@@ -38,6 +39,10 @@ class _MapScreenState extends State<MapScreen> {
         return stores;
       });
     });
+  }
+
+  void _retryShops() {
+    _loadShops();
   }
 
   @override
@@ -176,9 +181,15 @@ class _MapScreenState extends State<MapScreen> {
                             );
                           }
                           if (snapshot.hasError) {
-                            return const SizedBox.shrink();
+                            final error = snapshot.error.toString();
+                            final isNetwork = snapshot.error != null &&
+                                isNetworkFailure(snapshot.error!);
+                            return _buildErrorOverlay(error, isNetwork);
                           }
                           final stores = snapshot.data ?? const <StoreItem>[];
+                          if (stores.isEmpty) {
+                            return _buildEmptyOverlay();
+                          }
                           // Show up to five markers so the layout stays stable.
                           final markers = stores.take(5).toList();
                           return _markerLayer(
@@ -465,6 +476,119 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorOverlay(String error, bool isNetwork) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : const Color(0xFFFCA5A5),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isNetwork ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
+              size: 40,
+              color: const Color(0xFFDC2626),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Could not load shops',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isNetwork
+                  ? 'Check your connection and try again.'
+                  : error.isNotEmpty
+                      ? error
+                      : 'An unexpected error occurred.',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _retryShops,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.genieTeal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyOverlay() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.store_mall_directory_outlined,
+              size: 48,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No shops available',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Try again later or check another neighbourhood.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

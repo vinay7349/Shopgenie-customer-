@@ -35,7 +35,8 @@ class ShopService {
       emoji: '🥦',
       selfCheckout: false,
       offer: '20% off fresh greens',
-      description: 'Handpicked organic produce, farm fresh milk, pantry staples and cold-pressed oils.',
+      description:
+          'Handpicked organic produce, farm fresh milk, pantry staples and cold-pressed oils.',
       lat: 12.9340,
       lng: 77.6250,
       hours: '7:00 AM - 10:00 PM',
@@ -53,7 +54,8 @@ class ShopService {
       emoji: '🥐',
       selfCheckout: false,
       offer: 'Buy 1 Get 1 on Croissants',
-      description: 'Artisan sourdough loaves, hand-laminated butter croissants, and specialty espresso.',
+      description:
+          'Artisan sourdough loaves, hand-laminated butter croissants, and specialty espresso.',
       lat: 12.9355,
       lng: 77.6210,
       hours: '8:00 AM - 10:30 PM',
@@ -71,7 +73,8 @@ class ShopService {
       emoji: '💊',
       selfCheckout: false,
       offer: 'Flat 15% on wellness',
-      description: 'Essential prescription medicines, baby care, personal hygiene and 24/7 emergency supplies.',
+      description:
+          'Essential prescription medicines, baby care, personal hygiene and 24/7 emergency supplies.',
       lat: 12.9332,
       lng: 77.6275,
       hours: '24 Hours Open',
@@ -89,7 +92,8 @@ class ShopService {
       emoji: '🎧',
       selfCheckout: false,
       offer: 'Instant exchange bonus',
-      description: 'Certified audio gear, smartphones, charging cables and high-performance computing accessories.',
+      description:
+          'Certified audio gear, smartphones, charging cables and high-performance computing accessories.',
       lat: 12.9380,
       lng: 77.6310,
       hours: '10:00 AM - 9:30 PM',
@@ -107,7 +111,8 @@ class ShopService {
       emoji: '👕',
       selfCheckout: false,
       offer: 'End of season flat 30%',
-      description: 'Curated organic cotton wear, ethnic sarees, linen shirts and artisanal accessories.',
+      description:
+          'Curated organic cotton wear, ethnic sarees, linen shirts and artisanal accessories.',
       lat: 12.9320,
       lng: 77.6180,
       hours: '10:30 AM - 9:00 PM',
@@ -178,7 +183,8 @@ class ShopService {
       mrp: 195.0,
       emoji: '☕',
       stock: 25,
-      description: '100% pure instant coffee powder crafted with roasted beans.',
+      description:
+          '100% pure instant coffee powder crafted with roasted beans.',
       inStock: true,
       confidence: 0.95,
     ),
@@ -194,7 +200,8 @@ class ShopService {
       mrp: 140.0,
       emoji: '🍞',
       stock: 12,
-      description: '36-hour slow fermented sourdough loaf with an open crumb and crispy golden crust.',
+      description:
+          '36-hour slow fermented sourdough loaf with an open crumb and crispy golden crust.',
       inStock: true,
       confidence: 0.93,
     ),
@@ -210,7 +217,8 @@ class ShopService {
       mrp: 95.0,
       emoji: '🥐',
       stock: 35,
-      description: 'Classic flaky croissant baked fresh every morning with Normandy cultured butter.',
+      description:
+          'Classic flaky croissant baked fresh every morning with Normandy cultured butter.',
       inStock: true,
       confidence: 0.92,
     ),
@@ -299,7 +307,8 @@ class ShopService {
       title: 'Flat 20% Off Organic Greens',
       discount: '20% OFF',
       code: 'GREEN20',
-      description: 'Applicable on all locally harvested organic vegetables and fruits above ₹200.',
+      description:
+          'Applicable on all locally harvested organic vegetables and fruits above ₹200.',
       validTill: 'Ends Sunday midnight',
       category: 'Supermarket',
     ),
@@ -310,7 +319,8 @@ class ShopService {
       title: 'Buy 1 Get 1 on Croissants',
       discount: 'BOGO FREE',
       code: 'CRUSTBOGO',
-      description: 'Order any artisan coffee and get your second butter croissant on the house.',
+      description:
+          'Order any artisan coffee and get your second butter croissant on the house.',
       validTill: 'Valid 8:00 AM - 12:00 PM',
       category: 'Bakery & Cafe',
     ),
@@ -321,7 +331,8 @@ class ShopService {
       title: '15% Off Wellness & Supplements',
       discount: '15% OFF',
       code: 'CARE15',
-      description: 'Save on immunity boosters, vitamins, protein isolates, and first-aid kits.',
+      description:
+          'Save on immunity boosters, vitamins, protein isolates, and first-aid kits.',
       validTill: 'Valid till month end',
       category: 'Pharmacy',
     ),
@@ -355,6 +366,15 @@ class ShopService {
   // Callers are responsible for handling ShopApiException and distinguishing
   // a genuine empty list from a network failure.
 
+  /// Test seam: allows injecting a mock HTTP client into [fetchShops] and
+  /// [fetchShopById] when no client is explicitly passed. Null in production.
+  static http.Client? _httpClientOverride;
+
+  /// Allows tests to inject a mock HTTP client for shop API calls.
+  static void setHttpClientForTesting(http.Client? client) {
+    _httpClientOverride = client;
+  }
+
   /// Live shop discovery. Returns an empty list only when the server genuinely
   /// returns no shops; network or HTTP errors are rethrown as [ShopApiException].
   static Future<List<StoreItem>> fetchShops({
@@ -364,7 +384,7 @@ class ShopService {
     String? search,
     http.Client? client,
   }) async {
-    final api = ShopApiService(client: client);
+    final api = ShopApiService(client: client ?? _httpClientOverride);
     try {
       return await api.fetchShops(
         page: page,
@@ -382,9 +402,23 @@ class ShopService {
     String id, {
     http.Client? client,
   }) async {
-    final api = ShopApiService(client: client);
+    final api = ShopApiService(client: client ?? _httpClientOverride);
     try {
       return await api.fetchShopById(id);
+    } finally {
+      api.close();
+    }
+  }
+
+  /// Live product lookup for a shop. Fetches page 1 only; never falls back to
+  /// mock data on API failure.
+  static Future<List<ProductItem>> fetchProductsForShop(
+    String shopId, {
+    http.Client? client,
+  }) async {
+    final api = ShopApiService(client: client ?? _httpClientOverride);
+    try {
+      return await api.fetchProductsForShop(shopId);
     } finally {
       api.close();
     }

@@ -51,9 +51,12 @@ class ApiConfig {
   static const String productsRecognizeEndpoint = '/products/recognize/';
 
   // ---------------------------------------------------------------------------
-  // Auth endpoints (reserved for future increments)
+  // Auth endpoints
   // ---------------------------------------------------------------------------
   static const String authLoginEndpoint = '/auth/login/';
+  static const String authRegisterCustomerEndpoint = '/auth/register/customer/';
+  static const String authRegisterOwnerEndpoint = '/auth/register/owner/';
+  static const String authRefreshEndpoint = '/auth/refresh/';
 
   // ---------------------------------------------------------------------------
   // Helpers

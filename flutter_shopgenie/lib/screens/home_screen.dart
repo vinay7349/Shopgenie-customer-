@@ -52,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Live shop discovery state.
   Future<List<StoreItem>>? _shopsFuture;
-  String? _shopsError;
 
   @override
   void initState() {
@@ -62,7 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadShops() {
     setState(() {
-      _shopsError = null;
       _shopsFuture = ShopService.fetchShops();
     });
   }
@@ -71,7 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.clear();
     setState(() {
       _searchQuery = '';
-      _shopsError = null;
       _shopsFuture = ShopService.fetchShops();
     });
   }

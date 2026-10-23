@@ -3,12 +3,14 @@ import 'dart:io' show SocketException, HttpException;
 
 import 'package:http/http.dart' as http;
 
+import '../models/product_item.dart';
 import '../models/store_item.dart';
 import 'api_config.dart';
 
 /// Exception type that distinguishes API failures from valid empty results.
 class ShopApiException implements Exception {
-  ShopApiException(this.message, {this.statusCode, this.isNetworkError = false});
+  ShopApiException(this.message,
+      {this.statusCode, this.isNetworkError = false});
 
   final String message;
   final int? statusCode;
@@ -58,9 +60,8 @@ class ShopApiService {
       queryParameters: query,
     ));
 
-    final response = await _client
-        .get(uri)
-        .timeout(const Duration(seconds: 15));
+    final response =
+        await _client.get(uri).timeout(const Duration(seconds: 15));
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ShopApiException(
@@ -69,7 +70,15 @@ class ShopApiService {
       );
     }
 
-    final decoded = jsonDecode(response.body);
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw ShopApiException(
+        'Unexpected shop list response structure: could not parse JSON.',
+      );
+    }
+
     if (decoded is! Map<String, dynamic>) {
       throw ShopApiException(
         'Unexpected shop list response structure: expected an object with a '
@@ -103,9 +112,8 @@ class ShopApiService {
     final endpoint = ApiConfig.shopDetailEndpoint(normalizedId);
     final uri = Uri.parse(ApiConfig.fullUrl(endpoint));
 
-    final response = await _client
-        .get(uri)
-        .timeout(const Duration(seconds: 15));
+    final response =
+        await _client.get(uri).timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 404) {
       throw ShopApiException('Shop not found.', statusCode: 404);
@@ -117,13 +125,80 @@ class ShopApiService {
       );
     }
 
-    final decoded = jsonDecode(response.body);
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw ShopApiException(
+        'Unexpected shop detail response structure: could not parse JSON.',
+      );
+    }
+
     if (decoded is! Map<String, dynamic>) {
       throw ShopApiException(
         'Unexpected shop detail response structure: expected a JSON object.',
       );
     }
     return StoreItem.fromJson(decoded);
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /products/?shop=<id>
+  // ---------------------------------------------------------------------------
+  // The public product list endpoint is unauthenticated for GET. Products can
+  // be filtered by shop ID via the ?shop= query parameter. Only page 1 is
+  // fetched; page_size is not sent because backend support for it is not
+  // verified. If results span multiple pages, only the first page is returned.
+  Future<List<ProductItem>> fetchProductsForShop(String shopId) async {
+    final normalizedId = _normalizeId(shopId);
+    final query = <String, String>{
+      'shop': normalizedId,
+    };
+
+    final uri = Uri.parse(ApiConfig.urlWithQuery(
+      ApiConfig.productsEndpoint,
+      queryParameters: query,
+    ));
+
+    final response =
+        await _client.get(uri).timeout(const Duration(seconds: 15));
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ShopApiException(
+        'Failed to load products (HTTP ${response.statusCode}).',
+        statusCode: response.statusCode,
+      );
+    }
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw ShopApiException(
+        'Unexpected product list response structure: could not parse JSON.',
+      );
+    }
+
+    if (decoded is! Map<String, dynamic>) {
+      throw ShopApiException(
+        'Unexpected product list response structure: expected an object with a '
+        '"results" array.',
+      );
+    }
+
+    final results = decoded['results'];
+    if (results is! List) {
+      throw ShopApiException(
+        'Unexpected product list response structure: "results" was not a list.',
+      );
+    }
+
+    final products = <ProductItem>[];
+    for (final entry in results) {
+      if (entry is! Map<String, dynamic>) continue;
+      products.add(ProductItem.fromJson(entry));
+    }
+    return products;
   }
 
   void close() => _client.close();

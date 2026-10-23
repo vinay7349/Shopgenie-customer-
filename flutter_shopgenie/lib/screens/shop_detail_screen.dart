@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
+import '../models/product_item.dart';
 import '../models/store_item.dart';
+import '../services/shop_api_service.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
 
@@ -24,11 +26,23 @@ class ShopDetailScreen extends StatefulWidget {
 
 class _ShopDetailScreenState extends State<ShopDetailScreen> {
   late bool _isFollowing;
+  Future<List<ProductItem>>? _productsFuture;
 
   @override
   void initState() {
     super.initState();
     _isFollowing = widget.store.isFollowing;
+    _loadProducts();
+  }
+
+  void _loadProducts() {
+    setState(() {
+      _productsFuture = ShopService.fetchProductsForShop(widget.store.id);
+    });
+  }
+
+  void _retryProducts() {
+    _loadProducts();
   }
 
   @override
@@ -36,22 +50,24 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final storeProducts = ShopService.getProductsForStore(widget.store.id);
-
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: widget.onBack,
         ),
-        title: Text(widget.store.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text(widget.store.name,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         elevation: 0,
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         actions: [
           IconButton(
             icon: Icon(
-              _isFollowing ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              _isFollowing
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
               color: _isFollowing ? Colors.redAccent : null,
             ),
             onPressed: () {
@@ -60,7 +76,9 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(_isFollowing ? 'Following ${widget.store.name}' : 'Unfollowed'),
+                  content: Text(_isFollowing
+                      ? 'Following ${widget.store.name}'
+                      : 'Unfollowed'),
                   duration: const Duration(seconds: 1),
                 ),
               );
@@ -97,7 +115,8 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.center,
-                      child: Text(widget.store.emoji, style: const TextStyle(fontSize: 32)),
+                      child: Text(widget.store.emoji,
+                          style: const TextStyle(fontSize: 32)),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -109,24 +128,30 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                               Expanded(
                                 child: Text(
                                   widget.store.name,
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              const Icon(Icons.verified_rounded, color: AppColors.genieTeal, size: 18),
+                              const Icon(Icons.verified_rounded,
+                                  color: AppColors.genieTeal, size: 18),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${widget.store.category} · ${widget.store.distance}',
-                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                            style: TextStyle(
+                                fontSize: 13, color: Colors.grey[600]),
                           ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.sparkAmber.withValues(alpha: 0.18),
+                                  color: AppColors.sparkAmber
+                                      .withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -141,7 +166,8 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                               const SizedBox(width: 8),
                               Text(
                                 '${widget.store.followers} followers',
-                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                style: const TextStyle(
+                                    fontSize: 11, color: Colors.grey),
                               ),
                             ],
                           ),
@@ -155,7 +181,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 if (widget.store.description != null) ...[
                   Text(
                     widget.store.description!,
-                    style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withValues(alpha: 0.75)),
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.75)),
                   ),
                   const SizedBox(height: 14),
                 ],
@@ -163,13 +192,19 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 // Quick metadata
                 Row(
                   children: [
-                    Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.access_time_rounded,
+                        size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(widget.store.hours, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text(widget.store.hours,
+                        style:
+                            const TextStyle(fontSize: 11, color: Colors.grey)),
                     const SizedBox(width: 16),
-                    Icon(Icons.phone_outlined, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.phone_outlined,
+                        size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(widget.store.phone, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text(widget.store.phone,
+                        style:
+                            const TextStyle(fontSize: 11, color: Colors.grey)),
                   ],
                 ),
               ],
@@ -189,7 +224,8 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_awesome, color: AppColors.sparkAmber, size: 28),
+                  const Icon(Icons.auto_awesome,
+                      color: AppColors.sparkAmber, size: 28),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
@@ -197,7 +233,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                       children: [
                         Text(
                           'AI Product Scan Enabled',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13),
                         ),
                         Text(
                           'Point phone camera at shelf products to identify instantly',
@@ -211,139 +250,190 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.genieTeal,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('AI Scan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    child: const Text('AI Scan',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 12)),
                   ),
                 ],
               ),
             ),
 
           // Products Section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Popular Aisle Items',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '${storeProducts.length} items',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-
-          if (storeProducts.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Center(
-                child: Text(
-                  'Point camera at shelf items to identify with AI Product Scan!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-            )
-          else
-            ...storeProducts.map((p) {
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+          FutureBuilder<List<ProductItem>>(
+            future: _productsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(
+                    child: CircularProgressIndicator(),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.genieTeal.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(p.emoji, style: const TextStyle(fontSize: 24)),
+                );
+              }
+
+              if (snapshot.hasError) {
+                final error = snapshot.error.toString();
+                final isNetwork =
+                    snapshot.error != null && isNetworkFailure(snapshot.error!);
+                return Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: _buildProductErrorOverlay(error, isNetwork),
+                );
+              }
+
+              final products = snapshot.data ?? const <ProductItem>[];
+
+              if (products.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(
+                    child: Text(
+                      'This shop currently has no published products available.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                );
+              }
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Popular Aisle Items',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '${products.length} items',
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...products.map((p) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            p.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.genieTeal.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(p.emoji,
+                                style: const TextStyle(fontSize: 24)),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            p.category,
-                            style: const TextStyle(fontSize: 11, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text(
-                                '\$${p.price.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: AppColors.genieTeal,
-                                ),
-                              ),
-                              if (p.mrp > p.price) ...[
-                                const SizedBox(width: 6),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  '\$${p.mrp.toStringAsFixed(2)}',
+                                  p.name,
                                   style: const TextStyle(
-                                    fontSize: 11,
-                                    decoration: TextDecoration.lineThrough,
-                                    color: Colors.grey,
-                                  ),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  p.category,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.grey),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '\$${p.price.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: AppColors.genieTeal,
+                                      ),
+                                    ),
+                                    if (p.mrp > p.price) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '\$${p.mrp.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ],
-                            ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              widget.onAddToCart(
+                                CartItem(
+                                  id: p.id,
+                                  storeId: p.storeId,
+                                  name: p.name,
+                                  price: p.price,
+                                  emoji: p.emoji,
+                                ),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('Added ${p.name} to Smart Bag!'),
+                                  duration: const Duration(seconds: 1),
+                                  backgroundColor: AppColors.genieTeal,
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.genieTeal,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Add to Bag',
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        widget.onAddToCart(
-                          CartItem(
-                            id: p.id,
-                            storeId: p.storeId,
-                            name: p.name,
-                            price: p.price,
-                            emoji: p.emoji,
-                          ),
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Added ${p.name} to Smart Bag!'),
-                            duration: const Duration(seconds: 1),
-                            backgroundColor: AppColors.genieTeal,
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.genieTeal,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Add to Bag', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
+                    );
+                  }),
+                ],
               );
-            }),
+            },
+          ),
         ],
       ),
       bottomSheet: widget.store.selfCheckout
@@ -356,16 +446,83 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 child: ElevatedButton.icon(
                   onPressed: widget.onStartScan,
                   icon: const Icon(Icons.auto_awesome),
-                  label: const Text('Launch AI Product Scan', style: TextStyle(fontWeight: FontWeight.bold)),
+                  label: const Text('Launch AI Product Scan',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.genieTeal,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                 ),
               ),
             )
           : null,
+    );
+  }
+
+  Widget _buildProductErrorOverlay(String error, bool isNetwork) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : const Color(0xFFFCA5A5),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isNetwork ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
+              size: 40,
+              color: const Color(0xFFDC2626),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Could not load products',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isNetwork
+                  ? 'Check your connection and try again.'
+                  : error.isNotEmpty
+                      ? error
+                      : 'An unexpected error occurred.',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _retryProducts,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.genieTeal,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
