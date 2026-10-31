@@ -356,6 +356,24 @@ class AiDetectionOverlay extends StatelessWidget {
           ],
         );
 
+      case RecognitionStatus.unavailable:
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.info_outline_rounded, color: Colors.white70, size: 36),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage ?? 'Product recognition is not available.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        );
+
       case RecognitionStatus.idle:
       default:
         return Container(
@@ -399,6 +417,8 @@ class AiDetectionOverlay extends StatelessWidget {
         return AppColors.aiVioletDark;
       case RecognitionStatus.networkError:
         return Colors.orangeAccent;
+      case RecognitionStatus.unavailable:
+        return Colors.white38;
       case RecognitionStatus.idle:
       default:
         return Colors.white24;

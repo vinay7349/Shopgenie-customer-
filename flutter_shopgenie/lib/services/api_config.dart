@@ -11,23 +11,32 @@ class ApiConfig {
   // ---------------------------------------------------------------------------
   // Set `useProduction` to true when building for a real device or release.
   // Development defaults to the Android emulator loopback address.
-  static const bool useProduction = false;
+  static const bool useProduction = bool.fromEnvironment(
+    'USE_PRODUCTION_API',
+    defaultValue: false,
+  );
 
   // ---------------------------------------------------------------------------
   // Base URLs
   // ---------------------------------------------------------------------------
   // Android emulator development host (maps to host machine's localhost).
-  static const String devBaseUrl = 'http://10.0.2.2:8000/api';
+  static const String _configuredHost = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://10.0.2.2:8000',
+  );
+  static final String devBaseUrl = _normalizeApiBase(_configuredHost);
 
   // Production HTTPS endpoint (replace with real host before release).
-  static const String prodBaseUrl = 'https://api.shopgenie.example.com/api';
+  static const String prodBaseUrl = String.fromEnvironment(
+    'PROD_BASE_URL',
+    defaultValue: 'https://api.shopgenie.example.com/api',
+  );
 
   /// Active base URL for the current build.
   ///
-  /// On a physical Android device, 10.0.2.2 does not route to the host, so we
-  /// fall back to the host's LAN address (127.0.0.1 is also unreachable from a
-  /// physical device). Override [overrideBaseUrl] at app startup when testing
-  /// on real hardware, then flip [useProduction] on for release.
+  /// The default host is for Android emulators. For a physical device, pass
+  /// the PC's Wi-Fi URL with `--dart-define=BASE_URL=...` or use
+  /// `run_wifi_debug.ps1`.
   static String get baseUrl {
     if (overrideBaseUrl != null) return overrideBaseUrl!;
     if (useProduction) return prodBaseUrl;
@@ -37,6 +46,11 @@ class ApiConfig {
 
   /// Optional runtime override, e.g. when testing on a physical device.
   static String? overrideBaseUrl;
+
+  static String _normalizeApiBase(String host) {
+    final trimmed = host.trim().replaceFirst(RegExp(r'/+$'), '');
+    return trimmed.endsWith('/api') ? trimmed : '$trimmed/api';
+  }
 
   // ---------------------------------------------------------------------------
   // Shop endpoints

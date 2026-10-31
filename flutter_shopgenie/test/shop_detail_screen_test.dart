@@ -117,11 +117,10 @@ void main() {
     setUp(() {
       testStore = _testStore();
       mockClient = MockHttpClient(
-        handler: (request) async =>
-            _jsonStreamedResponse({
-              'count': 1,
-              'results': [_productJson(id: 1, name: 'Live Product')],
-            }, 200),
+        handler: (request) async => _jsonStreamedResponse({
+          'count': 1,
+          'results': [_productJson(id: 1, name: 'Live Product')],
+        }, 200),
       );
       ShopService.setHttpClientForTesting(mockClient);
     });
@@ -151,7 +150,7 @@ void main() {
       expect(find.text("Lay's Classic Salted"), findsNothing);
 
       // Item count should reflect live data.
-      expect(find.text('1 items'), findsOneWidget);
+      expect(find.text('1 product'), findsOneWidget);
     });
 
     testWidgets('shows empty state when API returns no products', (
@@ -210,8 +209,7 @@ void main() {
         handler: (request) async {
           callCount++;
           if (callCount == 1) {
-            return _jsonStreamedResponse(
-                {'detail': 'Server error'}, 500);
+            return _jsonStreamedResponse({'detail': 'Server error'}, 500);
           }
           return _jsonStreamedResponse({
             'count': 1,
@@ -241,7 +239,7 @@ void main() {
 
       // After retry, new product should be displayed.
       expect(find.text('After Retry'), findsOneWidget);
-      expect(find.text('1 items'), findsOneWidget);
+      expect(find.text('1 product'), findsOneWidget);
     });
 
     testWidgets('network failure does not crash the screen', (

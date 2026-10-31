@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/announcement_item.dart';
 import '../models/offer_item.dart';
-import '../models/store_item.dart';
 import '../services/shop_api_service.dart';
-import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
-import '../widgets/store_card.dart';
 
 class FeedScreen extends StatefulWidget {
-  final int initialTabIndex; // 0: Feed, 1: Offers, 2: Following
-  final Function(StoreItem) onSelectStore;
+  final int initialTabIndex; // 0: Feed, 1: Offers
   final ShopApiService? apiService;
 
   const FeedScreen({
     super.key,
     this.initialTabIndex = 0,
-    required this.onSelectStore,
     this.apiService,
   });
 
@@ -43,12 +38,21 @@ class _FeedScreenState extends State<FeedScreen>
     super.initState();
     _api = widget.apiService ?? ShopApiService();
     _tabController = TabController(
-      length: 3,
+      length: 2,
       vsync: this,
-      initialIndex: widget.initialTabIndex.clamp(0, 2),
+      initialIndex: widget.initialTabIndex.clamp(0, 1),
     );
     _loadAnnouncements();
     _loadOffers();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    if (widget.apiService == null) {
+      _api.close();
+    }
+    super.dispose();
   }
 
   Future<void> _loadAnnouncements() async {
@@ -98,23 +102,16 @@ class _FeedScreenState extends State<FeedScreen>
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    if (widget.apiService == null) {
-      _api.close();
-    }
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Community & Deals', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Community & Deals',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         elevation: 0,
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         bottom: TabBar(
@@ -126,7 +123,6 @@ class _FeedScreenState extends State<FeedScreen>
           tabs: const [
             Tab(text: '📢 Local Feed'),
             Tab(text: '🏷️ Flash Offers'),
-            Tab(text: '❤️ Following'),
           ],
         ),
       ),
@@ -138,9 +134,6 @@ class _FeedScreenState extends State<FeedScreen>
 
           // 2. Flash Offers Tab
           _buildOffersTab(context),
-
-          // 3. Following Tab
-          _buildFollowingTab(context),
         ],
       ),
     );
@@ -151,7 +144,8 @@ class _FeedScreenState extends State<FeedScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     if (_isLoadingAnnouncements) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.genieTeal));
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.genieTeal));
     }
 
     if (_announcementsError != null) {
@@ -163,13 +157,16 @@ class _FeedScreenState extends State<FeedScreen>
             children: [
               const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              Text(_announcementsError!, style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(_announcementsError!,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _loadAnnouncements,
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text('Retry'),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.genieTeal, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.genieTeal,
+                    foregroundColor: Colors.white),
               )
             ],
           ),
@@ -185,7 +182,8 @@ class _FeedScreenState extends State<FeedScreen>
           padding: const EdgeInsets.all(32),
           children: [
             const SizedBox(height: 60),
-            Icon(Icons.campaign_outlined, size: 64, color: Colors.grey.withValues(alpha: 0.5)),
+            Icon(Icons.campaign_outlined,
+                size: 64, color: Colors.grey.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             const Text(
               'No community updates yet',
@@ -243,17 +241,20 @@ class _FeedScreenState extends State<FeedScreen>
                         children: [
                           Text(
                             item.storeName,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                           Text(
                             item.date,
-                            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.grey[500]),
                           ),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: AppColors.feedBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -272,12 +273,16 @@ class _FeedScreenState extends State<FeedScreen>
                 const SizedBox(height: 12),
                 Text(
                   item.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   item.content,
-                  style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface.withValues(alpha: 0.75)),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.75)),
                 ),
               ],
             ),
@@ -292,7 +297,8 @@ class _FeedScreenState extends State<FeedScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     if (_isLoadingOffers) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.genieTeal));
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.genieTeal));
     }
 
     if (_offersError != null) {
@@ -304,13 +310,16 @@ class _FeedScreenState extends State<FeedScreen>
             children: [
               const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
               const SizedBox(height: 12),
-              Text(_offersError!, style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(_offersError!,
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _loadOffers,
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text('Retry'),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.genieTeal, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.genieTeal,
+                    foregroundColor: Colors.white),
               )
             ],
           ),
@@ -326,7 +335,8 @@ class _FeedScreenState extends State<FeedScreen>
           padding: const EdgeInsets.all(32),
           children: [
             const SizedBox(height: 60),
-            Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey.withValues(alpha: 0.5)),
+            Icon(Icons.local_offer_outlined,
+                size: 64, color: Colors.grey.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             const Text(
               'No active flash deals',
@@ -369,7 +379,8 @@ class _FeedScreenState extends State<FeedScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppColors.offerEmerald.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
@@ -392,54 +403,49 @@ class _FeedScreenState extends State<FeedScreen>
                 const SizedBox(height: 10),
                 Text(
                   offer.title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   offer.description,
-                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '🏪 ${offer.storeName}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.genieTeal),
-                    ),
-                    InkWell(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Offer code ${offer.code} active for ${offer.storeName}!'),
-                            backgroundColor: AppColors.genieTeal,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.genieTeal, style: BorderStyle.solid),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle_outline_rounded, size: 12, color: AppColors.genieTeal),
-                            const SizedBox(width: 4),
-                            Text(
-                              offer.code,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                                color: AppColors.genieTeal,
-                              ),
-                            ),
-                          ],
+                    if (offer.storeName.isNotEmpty)
+                      Text(
+                        '🏪 ${offer.storeName}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.genieTeal,
                         ),
                       ),
-                    ),
+                    if (offer.code != null && offer.code!.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.genieTeal),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          offer.code!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: AppColors.genieTeal,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -447,38 +453,6 @@ class _FeedScreenState extends State<FeedScreen>
           );
         },
       ),
-    );
-  }
-
-  Widget _buildFollowingTab(BuildContext context) {
-    final followingStores = ShopService.sampleStores.where((s) => s.isFollowing).toList();
-
-    if (followingStores.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'No shops followed yet. Tap the heart icon on any store to follow and receive notifications!',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: followingStores.length,
-      itemBuilder: (context, idx) {
-        final store = followingStores[idx];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: StoreCard(
-            store: store,
-            onTap: () => widget.onSelectStore(store),
-          ),
-        );
-      },
     );
   }
 }

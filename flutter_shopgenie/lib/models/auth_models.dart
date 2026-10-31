@@ -107,7 +107,7 @@ class AuthTokens {
   int get hashCode => Object.hash(access, refresh);
 
   @override
-  String toString() => 'AuthTokens(access: ${access.substring(0, 10)}..., refresh: ${refresh.substring(0, 10)}...)';
+  String toString() => 'AuthTokens([redacted])';
 }
 
 /// Combined response from login/registration endpoints.
@@ -125,9 +125,13 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    final userJson = json['user'] as Map<String, dynamic>?;
+    if (userJson == null) {
+      throw const FormatException('AuthResponse.user is required');
+    }
     return AuthResponse(
       tokens: AuthTokens.fromJson(json),
-      user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
+      user: AuthUser.fromJson(userJson),
       shopOwner: json['shop_owner'] != null
           ? AuthUser.fromJson(json['shop_owner'] as Map<String, dynamic>)
           : null,

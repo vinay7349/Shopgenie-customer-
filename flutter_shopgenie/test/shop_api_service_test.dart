@@ -38,6 +38,27 @@ http.StreamedResponse _jsonStreamedResponse(Object body, int statusCode) {
 
 void main() {
   group('ShopApiService.fetchShops', () {
+    test('uses the bearer token when an access-token provider is supplied',
+        () async {
+      final client = MockHttpClient(
+        handler: (request) async {
+          expect(request.headers['Authorization'], 'Bearer test-token');
+          return _jsonStreamedResponse({
+            'count': 0,
+            'next': null,
+            'previous': null,
+            'results': [],
+          }, 200);
+        },
+      );
+      final service = ShopApiService(
+        client: client,
+        getAccessToken: () async => 'test-token',
+      );
+
+      expect(await service.fetchShops(), isEmpty);
+    });
+
     test('parses valid paginated shop response', () async {
       final client = MockHttpClient(
         handler: (request) async {
@@ -214,8 +235,7 @@ void main() {
 
     test('throws ShopApiException when results key is missing', () async {
       final client = MockHttpClient(
-        handler: (request) async =>
-            _jsonStreamedResponse({'count': 0}, 200),
+        handler: (request) async => _jsonStreamedResponse({'count': 0}, 200),
       );
 
       final service = ShopApiService(client: client);
@@ -258,7 +278,7 @@ void main() {
       expect(shops[0].name, 'Valid Shop');
     });
 
-    test('propagates SocketException on network failure', () async {
+    test('wraps network failures in a network ShopApiException', () async {
       final client = MockHttpClient(
         handler: (request) async {
           throw SocketException('Connection refused');
@@ -268,7 +288,9 @@ void main() {
       final service = ShopApiService(client: client);
       expect(
         () => service.fetchShops(),
-        throwsA(isA<SocketException>()),
+        throwsA(
+          predicate<ShopApiException>((error) => error.isNetworkError),
+        ),
       );
     });
 
@@ -288,10 +310,10 @@ void main() {
       expect(shops, hasLength(1));
       expect(shops[0].id, '5');
       expect(shops[0].name, 'Minimal Shop');
-      expect(shops[0].category, 'Grocery');
-      expect(shops[0].rating, '4.8 ★');
-      expect(shops[0].hours, '8:00 AM - 10:00 PM');
-      expect(shops[0].phone, '+91 98450 12091');
+      expect(shops[0].category, '');
+      expect(shops[0].rating, 'N/A');
+      expect(shops[0].hours, '');
+      expect(shops[0].phone, '');
       expect(shops[0].description, isNull);
       expect(shops[0].offer, isNull);
     });
@@ -340,7 +362,8 @@ void main() {
       );
     });
 
-    test('throws ShopApiException with statusCode on HTTP 500 for detail', () async {
+    test('throws ShopApiException with statusCode on HTTP 500 for detail',
+        () async {
       final client = MockHttpClient(
         handler: (request) async =>
             _jsonStreamedResponse({'detail': 'Error'}, 500),

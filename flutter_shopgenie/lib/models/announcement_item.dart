@@ -18,19 +18,32 @@ class AnnouncementItem {
   });
 
   factory AnnouncementItem.fromJson(Map<String, dynamic> json) {
-    String formattedDate = 'Recently';
-    if (json['created_at'] != null) {
-      final raw = json['created_at'].toString();
-      formattedDate = raw.contains('T') ? raw.split('T').first : raw;
+    final id = json['id']?.toString();
+    final shopId = json['shop']?.toString();
+    final title = json['title']?.toString();
+    final content = json['content']?.toString();
+    final createdAt = json['created_at']?.toString();
+    final status = json['status']?.toString();
+    if (id == null ||
+        shopId == null ||
+        title == null ||
+        content == null ||
+        createdAt == null ||
+        status == null) {
+      throw const FormatException(
+        'Announcement response is missing required fields.',
+      );
     }
+    final formattedDate =
+        createdAt.contains('T') ? createdAt.split('T').first : createdAt;
 
     return AnnouncementItem(
-      id: json['id']?.toString() ?? '',
-      storeId: json['shop']?.toString() ?? '',
-      storeName: json['shop_name']?.toString() ?? 'Community Shop',
-      title: json['title']?.toString() ?? '',
-      content: json['content']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'PUBLISHED',
+      id: id,
+      storeId: shopId,
+      storeName: json['shop_name']?.toString() ?? '',
+      title: title,
+      content: content,
+      status: status,
       date: formattedDate,
     );
   }

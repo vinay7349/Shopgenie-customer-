@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../models/offer_item.dart';
 import '../models/store_item.dart';
 import '../models/user_role.dart';
 import '../services/shop_api_service.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/location_selector_sheet.dart';
-import '../widgets/promo_banner.dart';
+import '../widgets/live_offer_banner.dart';
 import '../widgets/quick_action_cards.dart';
 import '../widgets/store_card.dart';
 
@@ -20,7 +21,6 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback onOpenSearch;
   final VoidCallback onOpenFeed;
   final VoidCallback onOpenOffers;
-  final VoidCallback onOpenFollowing;
   final VoidCallback onOpenProfile;
   final VoidCallback? onOpenNotifications;
 
@@ -36,7 +36,6 @@ class HomeScreen extends StatefulWidget {
     required this.onOpenSearch,
     required this.onOpenFeed,
     required this.onOpenOffers,
-    required this.onOpenFollowing,
     required this.onOpenProfile,
     this.onOpenNotifications,
   });
@@ -46,37 +45,59 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<String> _categories = const ['All'];
   String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   // Live shop discovery state.
   Future<List<StoreItem>>? _shopsFuture;
+  Future<List<OfferItem>>? _offersFuture;
+  late final ShopApiService _apiService;
 
   @override
   void initState() {
     super.initState();
+    _apiService = ShopApiService();
     _loadShops();
-  }
-
-  void _loadShops() {
-    setState(() {
-      _shopsFuture = ShopService.fetchShops();
-    });
-  }
-
-  void _retryShops() {
-    _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-      _shopsFuture = ShopService.fetchShops();
-    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _apiService.close();
     super.dispose();
+  }
+
+  void _loadShops() {
+    setState(() {
+      _offersFuture = _apiService.fetchOffers();
+      _shopsFuture = _apiService
+          .fetchShops(
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+      )
+          .then((stores) {
+        final categories = ShopService.categoriesFor(stores);
+        if (mounted) {
+          setState(() {
+            _categories = categories;
+            if (!_categories.contains(_selectedCategory)) {
+              _selectedCategory = 'All';
+            }
+          });
+        }
+        if (widget.currentLocation == 'Location unavailable') {
+          return stores;
+        }
+        return stores
+            .where((store) => store.address == widget.currentLocation)
+            .toList();
+      });
+    });
+  }
+
+  void _retryShops() {
+    _loadShops();
   }
 
   void _showNotificationsSheet(BuildContext context) {
@@ -103,11 +124,15 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.notifications_active_rounded, color: Color(0xFF2563EB), size: 22),
+                    Icon(Icons.notifications_active_rounded,
+                        color: Color(0xFF2563EB), size: 22),
                     SizedBox(width: 8),
                     Text(
                       'Notifications',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A)),
                     ),
                   ],
                 ),
@@ -119,44 +144,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFDBEAFE)),
-              ),
-              child: const Row(
-                children: [
-                  Text('🎉', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Welcome to Rajarajeshwari Nagar! 12 neighbourhood shops enabled for instant AI Product Scan.',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1E40AF)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              child: const Row(
-                children: [
-                  Text('⚡', style: TextStyle(fontSize: 20)),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'The Old Coffee Roasters: 20% off all artisan cold brews today!',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF334155)),
-                    ),
-                  ),
-                ],
+              child: const Text(
+                'No notifications available.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF334155),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -173,7 +175,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final shortLocation = widget.currentLocation.split(',')[0];
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
@@ -184,7 +187,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: isDark ? AppColors.darkSurface : Colors.white,
                 border: Border(
                   bottom: BorderSide(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0).withValues(alpha: 0.7),
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFE2E8F0).withValues(alpha: 0.7),
                     width: 1,
                   ),
                 ),
@@ -203,12 +208,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       borderRadius: BorderRadius.circular(24),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkSurfaceVariant : const Color(0xFFF1F5F9),
+                          color: isDark
+                              ? AppColors.darkSurfaceVariant
+                              : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : const Color(0xFFE2E8F0),
                             width: 1,
                           ),
                         ),
@@ -227,7 +237,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1E293B),
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -236,7 +248,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icon(
                               Icons.keyboard_arrow_down_rounded,
                               size: 16,
-                              color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                              color: isDark
+                                  ? Colors.grey[400]
+                                  : const Color(0xFF64748B),
                             ),
                           ],
                         ),
@@ -254,9 +268,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
+                        color: isDark
+                            ? AppColors.darkSurfaceVariant
+                            : Colors.white,
                         border: Border.all(
-                          color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : const Color(0xFFE2E8F0),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -286,9 +304,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
+                        color: isDark
+                            ? AppColors.darkSurfaceVariant
+                            : Colors.white,
                         border: Border.all(
-                          color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : const Color(0xFFE2E8F0),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -316,7 +338,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFEF4444),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 1.5),
+                                border:
+                                    Border.all(color: Colors.white, width: 1.5),
                               ),
                             ),
                           ),
@@ -335,9 +358,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
+                        color: isDark
+                            ? AppColors.darkSurfaceVariant
+                            : Colors.white,
                         border: Border.all(
-                          color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : const Color(0xFFE2E8F0),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -391,10 +418,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              color: isDark
+                                  ? const Color(0xFF1E293B)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
                                 width: 1,
                               ),
                               boxShadow: [
@@ -414,12 +445,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                               style: TextStyle(
                                 fontSize: 13,
-                                color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1E293B),
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Find shops near you',
                                 hintStyle: TextStyle(
-                                  color: isDark ? Colors.grey[500] : const Color(0xFF94A3B8),
+                                  color: isDark
+                                      ? Colors.grey[500]
+                                      : const Color(0xFF94A3B8),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w400,
                                 ),
@@ -430,7 +465,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 suffixIcon: _searchQuery.isNotEmpty
                                     ? IconButton(
-                                        icon: const Icon(Icons.clear_rounded, size: 18),
+                                        icon: const Icon(Icons.clear_rounded,
+                                            size: 18),
                                         onPressed: () {
                                           _searchController.clear();
                                           setState(() {
@@ -448,28 +484,39 @@ class _HomeScreenState extends State<HomeScreen> {
                                         tooltip: 'Search on Map',
                                       ),
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 12),
 
-                        // 3. The 4 Multi-Role Deck Quick Action Cards (Feed, Offers, Following, Scan)
+                        // Quick access to live feed, offers, and scanning.
                         QuickActionCards(
                           onFeedTap: widget.onOpenFeed,
                           onOffersTap: widget.onOpenOffers,
-                          onFollowingTap: widget.onOpenFollowing,
                           onScanTap: widget.onOpenScanner,
                         ),
                         const SizedBox(height: 6),
 
-                        // 4. Hero Banner Carousel: "ShopGenie is growing!" with shop diorama image
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: PromoBanner(
-                            onTap: widget.onOpenOffers,
-                            onExploreMap: widget.onOpenMap,
+                          child: FutureBuilder<List<OfferItem>>(
+                            future: _offersFuture,
+                            builder: (context, snapshot) {
+                              final offers = snapshot.data;
+                              return LiveOfferBanner(
+                                offer: offers == null || offers.isEmpty
+                                    ? null
+                                    : offers.first,
+                                isLoading: snapshot.connectionState ==
+                                    ConnectionState.waiting,
+                                hasError: snapshot.hasError,
+                                onRetry: _loadShops,
+                                onTap: widget.onOpenOffers,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -478,19 +525,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 10),
 
-                  // 5. Section Header: Nearby Stores matching Multi-Role Deck
+                  // Published stores returned by the backend.
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 6.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Nearby Stores',
+                          'Published Stores',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.3,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF0F172A),
                           ),
                         ),
                         InkWell(
@@ -518,16 +567,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  // 6. Category Filter Chips matching Multi-Role Deck
+                  // Category Filter Chips
                   SizedBox(
                     height: 44,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       scrollDirection: Axis.horizontal,
-                      itemCount: ShopService.categories.length,
+                      itemCount: _categories.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 8),
                       itemBuilder: (context, idx) {
-                        final cat = ShopService.categories[idx];
+                        final cat = _categories[idx];
                         final isSelected = cat == _selectedCategory;
                         return ChoiceChip(
                           label: Text(cat),
@@ -541,19 +590,24 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           labelStyle: TextStyle(
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
                                 ? Colors.white
-                                : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
+                                : (isDark
+                                    ? const Color(0xFFCBD5E1)
+                                    : const Color(0xFF475569)),
                           ),
-                          selectedColor: const Color(0xFF0F766E),
+                          selectedColor: AppColors.primaryGreen,
                           backgroundColor: isDark
                               ? AppColors.darkSurfaceVariant
                               : Colors.white,
                           side: BorderSide(
                             color: isSelected
-                                ? const Color(0xFF0F766E)
-                                : (isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+                                ? AppColors.primaryGreen
+                                : (isDark
+                                    ? AppColors.darkBorder
+                                    : const Color(0xFFE2E8F0)),
                             width: 1,
                           ),
                           shape: RoundedRectangleBorder(
@@ -601,21 +655,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (snapshot.hasError) {
                         final isNetwork = isNetworkFailure(snapshot.error!);
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 24.0, horizontal: 16.0),
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkSurface : Colors.white,
+                              color:
+                                  isDark ? AppColors.darkSurface : Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isDark ? AppColors.darkBorder : const Color(0xFFFCA5A5),
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : const Color(0xFFFCA5A5),
                               ),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  isNetwork ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
+                                  isNetwork
+                                      ? Icons.wifi_off_rounded
+                                      : Icons.cloud_off_rounded,
                                   size: 40,
                                   color: const Color(0xFFDC2626),
                                 ),
@@ -642,12 +702,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
                                   onPressed: _retryShops,
-                                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                                  icon: const Icon(Icons.refresh_rounded,
+                                      size: 16),
                                   label: const Text('Retry'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.genieTeal,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 10),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -659,14 +721,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       }
 
-                      final allStores = snapshot.data ?? const <StoreItem>[];
-                      final filteredStores = ShopService.filterStores(
-                        stores: allStores,
+                      final stores = ShopService.filterStores(
+                        stores: snapshot.data ?? const <StoreItem>[],
                         query: _searchQuery,
                         category: _selectedCategory,
                       );
 
-                      if (filteredStores.isEmpty) {
+                      if (stores.isEmpty) {
                         return Padding(
                           padding: const EdgeInsets.all(32.0),
                           child: Column(
@@ -679,7 +740,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'No stores found for "$_searchQuery"',
+                                _searchQuery.isNotEmpty
+                                    ? 'No stores found for "$_searchQuery"'
+                                    : 'No stores found',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -688,7 +751,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Try a different neighbourhood or category filter.',
+                                'Try a different name or category filter.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[500],
@@ -705,10 +768,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filteredStores.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemCount: stores.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, idx) {
-                            final store = filteredStores[idx];
+                            final store = stores[idx];
                             return StoreCard(
                               store: store,
                               onTap: () => widget.onSelectStore(store),

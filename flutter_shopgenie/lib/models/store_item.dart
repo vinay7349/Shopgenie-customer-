@@ -9,11 +9,11 @@
   final bool selfCheckout;
   final String? offer;
   final String? description;
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
   final String hours;
   final String phone;
-  final int followers;
+  final int? followers;
   final bool isFollowing;
 
   const StoreItem({
@@ -27,11 +27,11 @@
     required this.selfCheckout,
     this.offer,
     this.description,
-    this.lat = 12.9250,
-    this.lng = 77.5220,
-    this.hours = '8:00 AM - 10:00 PM',
-    this.phone = '+91 98450 12091',
-    this.followers = 384,
+    this.lat,
+    this.lng,
+    this.hours = '',
+    this.phone = '',
+    this.followers,
     this.isFollowing = false,
   });
 
@@ -74,10 +74,15 @@
   }
 
   factory StoreItem.fromJson(Map<String, dynamic> json) {
+    final id = json['id']?.toString();
+    final name = json['name']?.toString();
+    if (id == null || id.isEmpty || name == null || name.isEmpty) {
+      throw const FormatException('Shop response must include id and name.');
+    }
     return StoreItem(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      category: json['category']?.toString() ?? 'Grocery',
+      id: id,
+      name: name,
+      category: json['category']?.toString() ?? '',
       distance: json['distance']?.toString() ?? '',
       rating: _formatRating(json['rating']),
       address: json['address']?.toString() ?? '',
@@ -85,11 +90,12 @@
       selfCheckout: json['selfCheckout'] as bool? ?? false,
       offer: json['offer'] as String?,
       description: json['description'] as String?,
-      lat: (json['lat'] as num?)?.toDouble() ?? 12.9250,
-      lng: (json['lng'] as num?)?.toDouble() ?? 77.5220,
-      hours: json['hours']?.toString() ?? json['business_hours']?.toString() ?? '8:00 AM - 10:00 PM',
-      phone: json['phone']?.toString() ?? '+91 98450 12091',
-      followers: json['followers'] as int? ?? 384,
+      lat: _coordinate(json['lat'] ?? json['latitude']),
+      lng: _coordinate(json['lng'] ?? json['longitude']),
+      hours:
+          json['hours']?.toString() ?? json['business_hours']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      followers: (json['followers'] as num?)?.toInt(),
       isFollowing: json['isFollowing'] as bool? ?? false,
     );
   }
@@ -116,10 +122,10 @@
   }
 
   static String _formatRating(dynamic value) {
-    if (value == null) return '4.8 \u2605';
+    if (value == null) return 'N/A';
     if (value is String) {
       final trimmed = value.trim();
-      if (trimmed.isEmpty) return '4.8 \u2605';
+      if (trimmed.isEmpty) return 'N/A';
       if (trimmed.contains('\u2605')) return trimmed;
       final parsed = double.tryParse(trimmed);
       if (parsed != null) return '${parsed.toStringAsFixed(1)} \u2605';
@@ -128,6 +134,12 @@
     if (value is num) {
       return '${value.toDouble().toStringAsFixed(1)} \u2605';
     }
-    return '4.8 \u2605';
+    return 'N/A';
+  }
+
+  static double? _coordinate(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
   }
 }

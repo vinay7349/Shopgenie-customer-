@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/cart_item.dart';
 import '../models/product_item.dart';
 import '../models/store_item.dart';
@@ -25,13 +26,11 @@ class ShopDetailScreen extends StatefulWidget {
 }
 
 class _ShopDetailScreenState extends State<ShopDetailScreen> {
-  late bool _isFollowing;
   Future<List<ProductItem>>? _productsFuture;
 
   @override
   void initState() {
     super.initState();
-    _isFollowing = widget.store.isFollowing;
     _loadProducts();
   }
 
@@ -64,31 +63,21 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         actions: [
           IconButton(
-            icon: Icon(
-              _isFollowing
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: _isFollowing ? Colors.redAccent : null,
-            ),
-            onPressed: () {
-              setState(() {
-                _isFollowing = !_isFollowing;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(_isFollowing
-                      ? 'Following ${widget.store.name}'
-                      : 'Unfollowed'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.share_outlined),
-            onPressed: () {
+            onPressed: () async {
+              final address = widget.store.address.trim();
+              if (address.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('No shop address is available.')),
+                );
+                return;
+              }
+              await Clipboard.setData(
+                ClipboardData(text: '${widget.store.name}\n$address'),
+              );
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Shop link copied to clipboard!')),
+                const SnackBar(content: Text('Shop address copied.')),
               );
             },
           ),
@@ -133,13 +122,15 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                                       fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              const Icon(Icons.verified_rounded,
-                                  color: AppColors.genieTeal, size: 18),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${widget.store.category} · ${widget.store.distance}',
+                            [
+                              widget.store.category,
+                              if (widget.store.distance.isNotEmpty)
+                                widget.store.distance,
+                            ].where((part) => part.isNotEmpty).join(' · '),
                             style: TextStyle(
                                 fontSize: 13, color: Colors.grey[600]),
                           ),
@@ -164,11 +155,12 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                '${widget.store.followers} followers',
-                                style: const TextStyle(
-                                    fontSize: 11, color: Colors.grey),
-                              ),
+                              if (widget.store.followers != null)
+                                Text(
+                                  '${widget.store.followers} followers',
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.grey),
+                                ),
                             ],
                           ),
                         ],
@@ -309,12 +301,14 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Popular Aisle Items',
+                          'Products from this shop',
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          '${products.length} items',
+                          products.length == 1
+                              ? '1 product'
+                              : '${products.length} products',
                           style:
                               const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
@@ -346,8 +340,19 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             alignment: Alignment.center,
-                            child: Text(p.emoji,
-                                style: const TextStyle(fontSize: 24)),
+                            child: p.imageUrl == null
+                                ? const Icon(
+                                    Icons.inventory_2_outlined,
+                                    color: AppColors.genieTeal,
+                                  )
+                                : Image.network(
+                                    p.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.inventory_2_outlined,
+                                      color: AppColors.genieTeal,
+                                    ),
+                                  ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -362,15 +367,45 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  p.category,
+                                  [
+                                    p.brand,
+                                    p.category,
+                                    p.size,
+                                  ]
+                                      .where((value) => value.isNotEmpty)
+                                      .join(' · '),
                                   style: const TextStyle(
                                       fontSize: 11, color: Colors.grey),
+                                ),
+                                if (p.description.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    p.description,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  p.inStock
+                                      ? 'In stock: ${p.stock} ${p.unit.toLowerCase()}'
+                                      : 'Out of stock',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: p.inStock
+                                        ? AppColors.genieTeal
+                                        : Colors.redAccent,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     Text(
-                                      '\$${p.price.toStringAsFixed(2)}',
+                                      '₹${p.price.toStringAsFixed(2)}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
@@ -380,7 +415,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                                     if (p.mrp > p.price) ...[
                                       const SizedBox(width: 6),
                                       Text(
-                                        '\$${p.mrp.toStringAsFixed(2)}',
+                                        '₹${p.mrp.toStringAsFixed(2)}',
                                         style: const TextStyle(
                                           fontSize: 11,
                                           decoration:
@@ -395,25 +430,27 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                             ),
                           ),
                           ElevatedButton(
-                            onPressed: () {
-                              widget.onAddToCart(
-                                CartItem(
-                                  id: p.id,
-                                  storeId: p.storeId,
-                                  name: p.name,
-                                  price: p.price,
-                                  emoji: p.emoji,
-                                ),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content:
-                                      Text('Added ${p.name} to Smart Bag!'),
-                                  duration: const Duration(seconds: 1),
-                                  backgroundColor: AppColors.genieTeal,
-                                ),
-                              );
-                            },
+                            onPressed: p.inStock
+                                ? () {
+                                    widget.onAddToCart(
+                                      CartItem(
+                                        id: p.id,
+                                        storeId: p.storeId,
+                                        name: p.name,
+                                        price: p.price,
+                                        emoji: p.emoji,
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Added ${p.name} to Smart Bag!'),
+                                        duration: const Duration(seconds: 1),
+                                        backgroundColor: AppColors.genieTeal,
+                                      ),
+                                    );
+                                  }
+                                : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.genieTeal,
                               foregroundColor: Colors.white,
@@ -422,7 +459,8 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
                             ),
-                            child: const Text('Add to Bag',
+                            child: Text(
+                                p.inStock ? 'Add to Bag' : 'Out of stock',
                                 style: TextStyle(
                                     fontSize: 12, fontWeight: FontWeight.bold)),
                           ),

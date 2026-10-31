@@ -4,14 +4,12 @@ import '../theme/app_colors.dart';
 class QuickActionCards extends StatelessWidget {
   final VoidCallback onFeedTap;
   final VoidCallback onOffersTap;
-  final VoidCallback onFollowingTap;
   final VoidCallback onScanTap;
 
   const QuickActionCards({
     super.key,
     required this.onFeedTap,
     required this.onOffersTap,
-    required this.onFollowingTap,
     required this.onScanTap,
   });
 
@@ -49,20 +47,7 @@ class QuickActionCards extends StatelessWidget {
           ),
           const SizedBox(width: 10),
 
-          // 3. Following Card
-          Expanded(
-            child: _buildActionCard(
-              isDark: isDark,
-              label: 'Following',
-              icon: Icons.favorite_rounded,
-              iconColor: const Color(0xFFF43F5E),
-              iconBgColor: const Color(0xFFFFF1F2),
-              onTap: onFollowingTap,
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // 4. AI Scan Card
+          // 3. AI Scan Card
           Expanded(
             child: _buildActionCard(
               isDark: isDark,
@@ -130,7 +115,8 @@ class QuickActionCards extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF334155),
+                color:
+                    isDark ? const Color(0xFFF1F5F9) : const Color(0xFF334155),
               ),
             ),
           ],

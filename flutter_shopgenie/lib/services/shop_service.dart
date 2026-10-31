@@ -1,382 +1,43 @@
-import '../models/store_item.dart';
-import '../models/product_item.dart';
-import '../models/product.dart';
-import '../models/offer_item.dart';
 import 'package:http/http.dart' as http;
+
+import '../models/product_item.dart';
+import '../models/store_item.dart';
 import 'shop_api_service.dart';
 
 class ShopService {
-  static const List<String> categories = [
-    'All',
-    'Supermarket',
-    'Bakery & Cafe',
-    'Pharmacy',
-    'Electronics',
-    'Fashion',
-  ];
-
-  static const List<String> availableLocations = [
-    'Indiranagar 100ft Rd, Bengaluru',
-    'Koramangala 4th Block, Bengaluru',
-    'HSR Layout Sector 1, Bengaluru',
-    'MG Road Central, Bengaluru',
-    'Rajarajeshwari Nagar, Bengaluru',
-    'Neermarga Proper, Mangaluru',
-  ];
-
-  static List<StoreItem> sampleStores = [
-    const StoreItem(
-      id: '1',
-      name: 'GreenLeaf Organic Grocers',
-      category: 'Supermarket',
-      distance: '350 m away',
-      rating: '4.8 ★',
-      address: '14th Main Rd, 4th Block',
-      emoji: '🥦',
-      selfCheckout: false,
-      offer: '20% off fresh greens',
-      description:
-          'Handpicked organic produce, farm fresh milk, pantry staples and cold-pressed oils.',
-      lat: 12.9340,
-      lng: 77.6250,
-      hours: '7:00 AM - 10:00 PM',
-      phone: '+91 98450 12091',
-      followers: 840,
-      isFollowing: true,
-    ),
-    const StoreItem(
-      id: '2',
-      name: 'The Daily Crust Bakery',
-      category: 'Bakery & Cafe',
-      distance: '500 m away',
-      rating: '4.9 ★',
-      address: '7th Cross, Koramangala',
-      emoji: '🥐',
-      selfCheckout: false,
-      offer: 'Buy 1 Get 1 on Croissants',
-      description:
-          'Artisan sourdough loaves, hand-laminated butter croissants, and specialty espresso.',
-      lat: 12.9355,
-      lng: 77.6210,
-      hours: '8:00 AM - 10:30 PM',
-      phone: '+91 80 2860 1199',
-      followers: 460,
-      isFollowing: true,
-    ),
-    const StoreItem(
-      id: '3',
-      name: 'CarePlus 24/7 Chemist',
-      category: 'Pharmacy',
-      distance: '220 m away',
-      rating: '4.7 ★',
-      address: '80ft Road, Near Park',
-      emoji: '💊',
-      selfCheckout: false,
-      offer: 'Flat 15% on wellness',
-      description:
-          'Essential prescription medicines, baby care, personal hygiene and 24/7 emergency supplies.',
-      lat: 12.9332,
-      lng: 77.6275,
-      hours: '24 Hours Open',
-      phone: '+91 80 4120 7700',
-      followers: 290,
-      isFollowing: false,
-    ),
-    const StoreItem(
-      id: '4',
-      name: 'Apex Digital Hub',
-      category: 'Electronics',
-      distance: '850 m away',
-      rating: '4.6 ★',
-      address: 'Sony World Signal',
-      emoji: '🎧',
-      selfCheckout: false,
-      offer: 'Instant exchange bonus',
-      description:
-          'Certified audio gear, smartphones, charging cables and high-performance computing accessories.',
-      lat: 12.9380,
-      lng: 77.6310,
-      hours: '10:00 AM - 9:30 PM',
-      phone: '+91 98800 54321',
-      followers: 512,
-      isFollowing: false,
-    ),
-    const StoreItem(
-      id: '5',
-      name: 'Urban Threads Boutique',
-      category: 'Fashion',
-      distance: '1.2 km away',
-      rating: '4.7 ★',
-      address: 'Near Forum Mall',
-      emoji: '👕',
-      selfCheckout: false,
-      offer: 'End of season flat 30%',
-      description:
-          'Curated organic cotton wear, ethnic sarees, linen shirts and artisanal accessories.',
-      lat: 12.9320,
-      lng: 77.6180,
-      hours: '10:30 AM - 9:00 PM',
-      phone: '+91 80 4141 8899',
-      followers: 320,
-      isFollowing: false,
-    ),
-  ];
-
-  static List<ProductItem> sampleProducts = [
-    const ProductItem(
-      id: 'p1',
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-      name: 'Coca-Cola 500ml',
-      brand: 'Coca-Cola',
-      category: 'Beverages',
-      size: '500 ml',
-      price: 40.0,
-      mrp: 45.0,
-      emoji: '🥤',
-      stock: 45,
-      description: 'Refreshing carbonated soft drink bottle.',
-      inStock: true,
-      confidence: 0.96,
-    ),
-    const ProductItem(
-      id: 'p2',
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-      name: "Lay's Classic Salted",
-      brand: "Lay's",
-      category: 'Snacks',
-      size: '50 g',
-      price: 20.0,
-      mrp: 20.0,
-      emoji: '🥔',
-      stock: 50,
-      description: 'Crispy golden potato chips with classic sea salt.',
-      inStock: true,
-      confidence: 0.98,
-    ),
-    const ProductItem(
-      id: 'p3',
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-      name: 'Amul Taaza Milk 1L',
-      brand: 'Amul',
-      category: 'Dairy',
-      size: '1 L',
-      price: 65.0,
-      mrp: 66.0,
-      emoji: '🥛',
-      stock: 30,
-      description: 'Pasteurised toned milk with nutrition and calcium.',
-      inStock: true,
-      confidence: 0.94,
-    ),
-    const ProductItem(
-      id: 'p4',
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-      name: 'Nescafe Classic Instant Coffee',
-      brand: 'Nescafe',
-      category: 'Beverages',
-      size: '50 g',
-      price: 180.0,
-      mrp: 195.0,
-      emoji: '☕',
-      stock: 25,
-      description:
-          '100% pure instant coffee powder crafted with roasted beans.',
-      inStock: true,
-      confidence: 0.95,
-    ),
-    const ProductItem(
-      id: 'p5',
-      storeId: '2',
-      storeName: 'The Daily Crust Bakery',
-      name: 'Artisan Sourdough Boule',
-      brand: 'The Daily Crust',
-      category: 'Bakery',
-      size: '400 g',
-      price: 120.0,
-      mrp: 140.0,
-      emoji: '🍞',
-      stock: 12,
-      description:
-          '36-hour slow fermented sourdough loaf with an open crumb and crispy golden crust.',
-      inStock: true,
-      confidence: 0.93,
-    ),
-    const ProductItem(
-      id: 'p6',
-      storeId: '2',
-      storeName: 'The Daily Crust Bakery',
-      name: 'French Butter Croissant',
-      brand: 'The Daily Crust',
-      category: 'Pastry',
-      size: '80 g',
-      price: 85.0,
-      mrp: 95.0,
-      emoji: '🥐',
-      stock: 35,
-      description:
-          'Classic flaky croissant baked fresh every morning with Normandy cultured butter.',
-      inStock: true,
-      confidence: 0.92,
-    ),
-  ];
-
-  static List<Product> sampleRecognizedProducts = [
-    const Product(
-      id: '101',
-      name: 'Coca-Cola 500ml',
-      brand: 'Coca-Cola',
-      category: 'Beverages',
-      size: '500 ml',
-      price: 40.0,
-      emoji: '🥤',
-      confidence: 0.96,
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-    ),
-    const Product(
-      id: '102',
-      name: "Lay's Classic",
-      brand: "Lay's",
-      category: 'Snacks',
-      size: '50 g',
-      price: 20.0,
-      emoji: '🥔',
-      confidence: 0.98,
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-    ),
-    const Product(
-      id: '103',
-      name: 'Amul Milk 1L',
-      brand: 'Amul',
-      category: 'Dairy',
-      size: '1 L',
-      price: 65.0,
-      emoji: '🥛',
-      confidence: 0.94,
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-    ),
-    const Product(
-      id: '104',
-      name: 'Nescafe Classic 50g',
-      brand: 'Nescafe',
-      category: 'Beverages',
-      size: '50 g',
-      price: 180.0,
-      emoji: '☕',
-      confidence: 0.95,
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-    ),
-    const Product(
-      id: '105',
-      name: 'Britannia Good Day Butter',
-      brand: 'Britannia',
-      category: 'Biscuits',
-      size: '100 g',
-      price: 30.0,
-      emoji: '🍪',
-      confidence: 0.97,
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-    ),
-    const Product(
-      id: '106',
-      name: 'Tata Salt 1kg',
-      brand: 'Tata',
-      category: 'Pantry',
-      size: '1 kg',
-      price: 28.0,
-      emoji: '🧂',
-      confidence: 0.95,
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-    ),
-  ];
-
-  static List<OfferItem> sampleOffers = [
-    const OfferItem(
-      id: 'off-1',
-      storeId: '1',
-      storeName: 'GreenLeaf Organic Grocers',
-      title: 'Flat 20% Off Organic Greens',
-      discount: '20% OFF',
-      code: 'GREEN20',
-      description:
-          'Applicable on all locally harvested organic vegetables and fruits above ₹200.',
-      validTill: 'Ends Sunday midnight',
-      category: 'Supermarket',
-    ),
-    const OfferItem(
-      id: 'off-2',
-      storeId: '2',
-      storeName: 'The Daily Crust Bakery',
-      title: 'Buy 1 Get 1 on Croissants',
-      discount: 'BOGO FREE',
-      code: 'CRUSTBOGO',
-      description:
-          'Order any artisan coffee and get your second butter croissant on the house.',
-      validTill: 'Valid 8:00 AM - 12:00 PM',
-      category: 'Bakery & Cafe',
-    ),
-    const OfferItem(
-      id: 'off-3',
-      storeId: '3',
-      storeName: 'CarePlus 24/7 Chemist',
-      title: '15% Off Wellness & Supplements',
-      discount: '15% OFF',
-      code: 'CARE15',
-      description:
-          'Save on immunity boosters, vitamins, protein isolates, and first-aid kits.',
-      validTill: 'Valid till month end',
-      category: 'Pharmacy',
-    ),
-  ];
-
-  static List<StoreItem> filterStores({
-    List<StoreItem>? stores,
-    String query = '',
-    String category = 'All',
-  }) {
-    final source = stores ?? sampleStores;
-    return source.where((store) {
-      final matchesCat = category == 'All' ||
-          store.category.toLowerCase().contains(category.toLowerCase());
-      final matchesQuery = query.trim().isEmpty ||
-          store.name.toLowerCase().contains(query.toLowerCase()) ||
-          store.category.toLowerCase().contains(query.toLowerCase()) ||
-          store.address.toLowerCase().contains(query.toLowerCase());
-      return matchesCat && matchesQuery;
-    }).toList();
-  }
-
-  static List<ProductItem> getProductsForStore(String storeId) {
-    return sampleProducts.where((p) => p.storeId == storeId).toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Live API integration
-  // ---------------------------------------------------------------------------
-  // These methods delegate to ShopApiService and never fall back to mock data.
-  // Callers are responsible for handling ShopApiException and distinguishing
-  // a genuine empty list from a network failure.
-
-  /// Test seam: allows injecting a mock HTTP client into [fetchShops] and
-  /// [fetchShopById] when no client is explicitly passed. Null in production.
   static http.Client? _httpClientOverride;
 
-  /// Allows tests to inject a mock HTTP client for shop API calls.
   static void setHttpClientForTesting(http.Client? client) {
     _httpClientOverride = client;
   }
 
-  /// Live shop discovery. Returns an empty list only when the server genuinely
-  /// returns no shops; network or HTTP errors are rethrown as [ShopApiException].
+  static List<String> categoriesFor(List<StoreItem> stores) {
+    final categories = stores
+        .map((store) => store.category.trim())
+        .where((category) => category.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return ['All', ...categories];
+  }
+
+  static List<StoreItem> filterStores({
+    required List<StoreItem> stores,
+    String query = '',
+    String category = 'All',
+  }) {
+    final normalizedQuery = query.trim().toLowerCase();
+    return stores.where((store) {
+      final matchesCategory =
+          category == 'All' || store.category.toLowerCase() == category.toLowerCase();
+      final matchesQuery = normalizedQuery.isEmpty ||
+          store.name.toLowerCase().contains(normalizedQuery) ||
+          store.category.toLowerCase().contains(normalizedQuery) ||
+          store.address.toLowerCase().contains(normalizedQuery);
+      return matchesCategory && matchesQuery;
+    }).toList();
+  }
+
   static Future<List<StoreItem>> fetchShops({
     int page = 1,
     int pageSize = 20,
@@ -397,7 +58,6 @@ class ShopService {
     }
   }
 
-  /// Live single-shop lookup. Supports integer and string IDs.
   static Future<StoreItem> fetchShopById(
     String id, {
     http.Client? client,
@@ -410,8 +70,6 @@ class ShopService {
     }
   }
 
-  /// Live product lookup for a shop. Fetches page 1 only; never falls back to
-  /// mock data on API failure.
   static Future<List<ProductItem>> fetchProductsForShop(
     String shopId, {
     http.Client? client,

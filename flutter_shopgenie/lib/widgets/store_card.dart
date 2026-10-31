@@ -92,7 +92,10 @@ class StoreCard extends StatelessWidget {
                     const SizedBox(height: 3),
 
                     Text(
-                      '${store.category} · ${store.distance}',
+                      [
+                        store.category,
+                        if (store.distance.isNotEmpty) store.distance,
+                      ].where((part) => part.isNotEmpty).join(' · '),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 12,
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.65),

@@ -20,24 +20,24 @@ class Product {
     required this.price,
     this.image,
     this.emoji = '🛍️',
-    this.confidence = 0.95,
-    this.storeId = '1',
-    this.storeName = 'GreenLeaf Organic Grocers',
+    this.confidence = 0.0,
+    this.storeId = '',
+    this.storeName = '',
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id']?.toString() ?? '',
-      name: json['name'] as String? ?? 'Product',
+      name: json['name'] as String? ?? '',
       brand: json['brand'] as String? ?? '',
       category: json['category'] as String? ?? '',
       size: json['size'] as String? ?? '',
       price: ((json['price'] ?? json['selling_price']) as num?)?.toDouble() ?? 0.0,
       image: json['image'] as String?,
       emoji: json['emoji'] as String? ?? '🛍️',
-      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.95,
-      storeId: (json['store_id'] ?? json['shop'])?.toString() ?? '1',
-      storeName: json['store_name'] as String? ?? 'Nearby Store',
+      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
+      storeId: (json['store_id'] ?? json['shop'])?.toString() ?? '',
+      storeName: json['store_name'] as String? ?? '',
     );
   }
 

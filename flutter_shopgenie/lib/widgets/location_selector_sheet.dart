@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/shop_service.dart';
+
+import '../models/store_item.dart';
+import '../services/shop_api_service.dart';
 import '../theme/app_colors.dart';
 
-class LocationSelectorSheet extends StatelessWidget {
+class LocationSelectorSheet extends StatefulWidget {
   final String currentLocation;
   final ValueChanged<String> onLocationSelected;
 
@@ -26,6 +28,27 @@ class LocationSelectorSheet extends StatelessWidget {
         onLocationSelected: onLocationSelected,
       ),
     );
+  }
+
+  @override
+  State<LocationSelectorSheet> createState() => _LocationSelectorSheetState();
+}
+
+class _LocationSelectorSheetState extends State<LocationSelectorSheet> {
+  late final ShopApiService _api;
+  late final Future<List<StoreItem>> _shopsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _api = ShopApiService();
+    _shopsFuture = _api.fetchShops();
+  }
+
+  @override
+  void dispose() {
+    _api.close();
+    super.dispose();
   }
 
   @override
@@ -78,7 +101,7 @@ class LocationSelectorSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'ShopGenie searches verified shops nearby',
+                    'Select an address from the live shop directory',
                     style: TextStyle(
                       fontSize: 12,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -94,67 +117,8 @@ class LocationSelectorSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // GPS Button
-          InkWell(
-            onTap: () {
-              onLocationSelected('Current GPS Location (Koramangala)');
-              Navigator.pop(context);
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.genieTeal.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.genieTeal.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.genieTeal,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.my_location_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Use Current GPS Location',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: AppColors.genieTeal,
-                          ),
-                        ),
-                        Text(
-                          'Automatically detects neighbourhood shops',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
           Text(
-            'SAVED NEIGHBOURHOODS',
+            'SHOP ADDRESSES',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -164,48 +128,92 @@ class LocationSelectorSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Neighborhoods list
-          ...ShopService.availableLocations.map((loc) {
-            final isSelected = loc == currentLocation;
-            return InkWell(
-              onTap: () {
-                onLocationSelected(loc);
-                Navigator.pop(context);
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 20,
-                      color: isSelected ? AppColors.genieTeal : Colors.grey,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        loc,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected
-                              ? AppColors.genieTeal
-                              : theme.colorScheme.onSurface,
+          FutureBuilder<List<StoreItem>>(
+            future: _shopsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Unable to load shop addresses: ${snapshot.error}',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                );
+              }
+              final shops = snapshot.data ?? const <StoreItem>[];
+              final addresses = shops
+                  .where((shop) => shop.address.trim().isNotEmpty)
+                  .toList();
+              if (addresses.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text('No shop addresses are available yet.'),
+                );
+              }
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: addresses.length,
+                  itemBuilder: (context, index) {
+                    final shop = addresses[index];
+                    final isSelected = shop.address == widget.currentLocation;
+                    return InkWell(
+                      onTap: () {
+                        widget.onLocationSelected(shop.address);
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 20,
+                              color: isSelected
+                                  ? AppColors.genieTeal
+                                  : Colors.grey,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                shop.address,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isSelected
+                                      ? AppColors.genieTeal
+                                      : theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: AppColors.genieTeal,
+                                size: 20,
+                              ),
+                          ],
                         ),
                       ),
-                    ),
-                    if (isSelected)
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        color: AppColors.genieTeal,
-                        size: 20,
-                      ),
-                  ],
+                    );
+                  },
                 ),
-              ),
-            );
-          }),
+              );
+            },
+          ),
         ],
       ),
     );

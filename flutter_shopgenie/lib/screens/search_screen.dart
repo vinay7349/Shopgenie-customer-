@@ -31,8 +31,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
   String _query = '';
   String _selectedCategory = 'All';
-  bool _selfCheckoutOnly = false;
   bool _isSearching = false;
+  String? _searchError;
+
+  List<String> get _categories => ShopService.categoriesFor(_apiStores);
 
   List<StoreItem> _apiStores = [];
   List<ProductItem> _apiProducts = [];
@@ -68,18 +70,18 @@ class _SearchScreenState extends State<SearchScreen> {
     if (!mounted) return;
     setState(() {
       _isSearching = true;
+      _searchError = null;
     });
 
     try {
       final futures = await Future.wait([
         _api.fetchShops(
           search: _query.isNotEmpty ? _query : null,
-          category: _selectedCategory != 'All' ? _selectedCategory : null,
         ),
         _query.isNotEmpty
             ? _api.searchProducts(
                 _query,
-                category: _selectedCategory != 'All' ? _selectedCategory : null,
+                category: _selectedCategory == 'All' ? null : _selectedCategory,
               )
             : Future.value(<ProductItem>[]),
       ]);
@@ -88,13 +90,17 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() {
           _apiStores = futures[0] as List<StoreItem>;
           _apiProducts = futures[1] as List<ProductItem>;
+          _searchError = null;
           _isSearching = false;
         });
       }
-    } catch (_) {
-      // If backend network fails, gracefully fall back to local service
+    } catch (e) {
+      // If backend network fails, show error state - no fallback to mock data
       if (mounted) {
         setState(() {
+          _searchError = 'Search failed: ${e.toString()}';
+          _apiStores = [];
+          _apiProducts = [];
           _isSearching = false;
         });
       }
@@ -106,30 +112,21 @@ class _SearchScreenState extends State<SearchScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Use live API stores when available, or fall back to filtered local stores
-    var stores = _apiStores.isNotEmpty || _query.isNotEmpty
-        ? _apiStores
-        : ShopService.filterStores(
-            query: _query,
-            category: _selectedCategory,
-          );
+    // Use live API stores only - no fallback to local mock data
+    final stores = ShopService.filterStores(
+      stores: _apiStores,
+      category: _selectedCategory,
+    );
 
-    if (_selfCheckoutOnly) {
-      stores = stores.where((s) => s.selfCheckout).toList();
-    }
-
-    final matchingProducts = _apiProducts.isNotEmpty
-        ? _apiProducts
-        : ShopService.sampleProducts.where((p) {
-            if (_query.trim().isEmpty) return false;
-            return p.name.toLowerCase().contains(_query.toLowerCase()) ||
-                p.category.toLowerCase().contains(_query.toLowerCase());
-          }).toList();
+    // Use live API products only - no fallback to local mock data
+    final matchingProducts = _apiProducts;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Search Shops & Products', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Search Shops & Products',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         elevation: 0,
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
       ),
@@ -143,10 +140,14 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceVariant : const Color(0xFFF1F5F9),
+                    color: isDark
+                        ? AppColors.darkSurfaceVariant
+                        : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                      color: isDark
+                          ? AppColors.darkBorder
+                          : const Color(0xFFE2E8F0),
                     ),
                   ),
                   child: TextField(
@@ -155,8 +156,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     onChanged: _onQueryChanged,
                     decoration: InputDecoration(
                       hintText: 'Search stores, groceries, bakeries...',
-                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.genieTeal),
+                      hintStyle:
+                          TextStyle(fontSize: 13, color: Colors.grey[500]),
+                      prefixIcon: const Icon(Icons.search_rounded,
+                          color: AppColors.genieTeal),
                       suffixIcon: _query.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear_rounded, size: 18),
@@ -176,34 +179,18 @@ class _SearchScreenState extends State<SearchScreen> {
                 // Filters row
                 Row(
                   children: [
-                    FilterChip(
-                      label: const Text('⚡ AI Product Scan', style: TextStyle(fontSize: 11)),
-                      selected: _selfCheckoutOnly,
-                      onSelected: (val) {
-                        setState(() {
-                          _selfCheckoutOnly = val;
-                        });
-                      },
-                      selectedColor: AppColors.aiViolet.withValues(alpha: 0.18),
-                      checkmarkColor: AppColors.aiViolet,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      side: BorderSide(
-                        color: _selfCheckoutOnly ? AppColors.aiViolet : Colors.grey.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
                     // Category dropdown chips
                     Expanded(
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: ShopService.categories.map((cat) {
+                          children: _categories.map((cat) {
                             final isSel = _selectedCategory == cat;
                             return Padding(
                               padding: const EdgeInsets.only(right: 6),
                               child: ChoiceChip(
-                                label: Text(cat, style: const TextStyle(fontSize: 11)),
+                                label: Text(cat,
+                                    style: const TextStyle(fontSize: 11)),
                                 selected: isSel,
                                 onSelected: (sel) {
                                   if (sel) {
@@ -213,12 +200,17 @@ class _SearchScreenState extends State<SearchScreen> {
                                     _triggerSearch();
                                   }
                                 },
-                                selectedColor: AppColors.genieTeal,
+                                selectedColor: AppColors.primaryGreen,
                                 labelStyle: TextStyle(
-                                  color: isSel ? Colors.white : theme.colorScheme.onSurface,
-                                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                  color: isSel
+                                      ? Colors.white
+                                      : theme.colorScheme.onSurface,
+                                  fontWeight: isSel
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
                               ),
                             );
                           }).toList(),
@@ -258,50 +250,78 @@ class _SearchScreenState extends State<SearchScreen> {
                   ...matchingProducts.map((p) {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                       child: ListTile(
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.genieTeal.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: p.imageUrl == null
+                                ? const Icon(
+                                    Icons.shopping_bag_outlined,
+                                    color: AppColors.genieTeal,
+                                  )
+                                : Image.network(
+                                    p.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.shopping_bag_outlined,
+                                      color: AppColors.genieTeal,
+                                    ),
+                                  ),
                           ),
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.shopping_bag_outlined, color: AppColors.genieTeal),
                         ),
-                        title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        title: Text(p.name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13)),
                         subtitle: Text(
-                          '${p.storeName.isNotEmpty ? "${p.storeName} • " : ""}₹${p.price.toStringAsFixed(0)}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.genieTeal),
+                          [
+                            if (p.storeName.isNotEmpty) p.storeName,
+                            '₹${p.price.toStringAsFixed(2)}',
+                            p.inStock
+                                ? '${p.stock} ${p.unit.toLowerCase()} in stock'
+                                : 'Out of stock',
+                          ].join(' • '),
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.genieTeal),
                         ),
                         trailing: ElevatedButton(
-                          onPressed: () {
-                            widget.onAddToCart(
-                              CartItem(
-                                id: p.id,
-                                storeId: p.storeId,
-                                name: p.name,
-                                price: p.price,
-                                emoji: '🛍️',
-                              ),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Added ${p.name} to Smart Bag!'),
-                                duration: const Duration(seconds: 1),
-                                backgroundColor: AppColors.genieTeal,
-                              ),
-                            );
-                          },
+                          onPressed: p.inStock
+                              ? () {
+                                  widget.onAddToCart(
+                                    CartItem(
+                                      id: p.id,
+                                      storeId: p.storeId,
+                                      name: p.name,
+                                      price: p.price,
+                                      emoji: '🛍️',
+                                    ),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text('Added ${p.name} to Smart Bag!'),
+                                      duration: const Duration(seconds: 1),
+                                      backgroundColor: AppColors.genieTeal,
+                                    ),
+                                  );
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.genieTeal,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
                             minimumSize: Size.zero,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
-                          child: const Text('Add', style: TextStyle(fontSize: 11)),
+                          child: Text(
+                            p.inStock ? 'Add' : 'Out of stock',
+                            style: const TextStyle(fontSize: 11),
+                          ),
                         ),
                       ),
                     );
@@ -321,22 +341,33 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                if (stores.isEmpty && !_isSearching)
+                if (_searchError != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      _searchError!,
+                      style: const TextStyle(color: AppColors.errorRed),
+                    ),
+                  )
+                else if (stores.isEmpty && !_isSearching)
                   Padding(
                     padding: const EdgeInsets.all(32.0),
                     child: Center(
                       child: Column(
                         children: [
-                          const Icon(Icons.search_off_rounded, size: 48, color: Colors.grey),
+                          const Icon(Icons.search_off_rounded,
+                              size: 48, color: Colors.grey),
                           const SizedBox(height: 12),
                           const Text(
                             'No shops found',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Try clearing keywords or switching category filters',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[600]),
                           ),
                         ],
                       ),

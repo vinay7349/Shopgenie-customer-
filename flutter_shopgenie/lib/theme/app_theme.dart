@@ -9,21 +9,21 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: AppColors.genieTeal,
+      primaryColor: AppColors.primaryGreen,
       scaffoldBackgroundColor: AppColors.lightBackground,
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
-        primary: AppColors.genieTeal,
+        primary: AppColors.primaryGreen,
         onPrimary: Colors.white,
-        primaryContainer: AppColors.genieTealContainerLight,
-        onPrimaryContainer: Color(0xFF115E59),
-        secondary: AppColors.sparkAmber,
-        onSecondary: Color(0xFF1E293B),
-        secondaryContainer: AppColors.sparkAmberContainerLight,
-        onSecondaryContainer: Color(0xFF78350F),
+        primaryContainer: AppColors.primaryGreenContainer,
+        onPrimaryContainer: Color(0xFF1E4A2B),
+        secondary: AppColors.mintAccent,
+        onSecondary: Colors.white,
+        secondaryContainer: AppColors.mintAccentContainer,
+        onSecondaryContainer: Color(0xFF064E3B),
         tertiary: AppColors.aiViolet,
         onTertiary: Colors.white,
-        error: Color(0xFFDC2626),
+        error: AppColors.errorRed,
         onError: Colors.white,
         surface: AppColors.lightSurface,
         onSurface: AppColors.lightTextPrimary,
@@ -47,7 +47,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.genieTeal,
+          backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -74,19 +74,19 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.genieTeal, width: 1.8),
+          borderSide: const BorderSide(color: AppColors.primaryGreen, width: 1.8),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.lightSurface,
-        indicatorColor: AppColors.genieTealContainerLight,
+        indicatorColor: AppColors.primaryGreenContainer,
         elevation: 8,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppColors.genieTeal,
+              color: AppColors.primaryGreen,
             );
           }
           return const TextStyle(
@@ -103,21 +103,21 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: AppColors.genieTealDark,
+      primaryColor: AppColors.primaryGreenLight,
       scaffoldBackgroundColor: AppColors.darkBackground,
       colorScheme: const ColorScheme(
         brightness: Brightness.dark,
-        primary: AppColors.genieTealDark,
-        onPrimary: Color(0xFF003833),
-        primaryContainer: AppColors.genieTealContainerDark,
-        onPrimaryContainer: AppColors.genieTealContainerLight,
-        secondary: AppColors.sparkAmberLight,
-        onSecondary: Color(0xFF451A03),
-        secondaryContainer: AppColors.sparkAmberContainerDark,
-        onSecondaryContainer: AppColors.sparkAmberContainerLight,
+        primary: AppColors.primaryGreenLight,
+        onPrimary: Color(0xFF0B2A18),
+        primaryContainer: AppColors.primaryGreenContainerDark,
+        onPrimaryContainer: AppColors.primaryGreenContainer,
+        secondary: AppColors.mintAccentLight,
+        onSecondary: Color(0xFF052E16),
+        secondaryContainer: AppColors.mintAccentContainerDark,
+        onSecondaryContainer: AppColors.mintAccentContainer,
         tertiary: AppColors.aiVioletDark,
         onTertiary: Color(0xFF1E1B4B),
-        error: Color(0xFFEF4444),
+        error: AppColors.errorRed,
         onError: Colors.white,
         surface: AppColors.darkSurface,
         onSurface: AppColors.darkTextPrimary,
@@ -141,7 +141,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.genieTeal,
+          backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -168,19 +168,19 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.genieTealDark, width: 1.8),
+          borderSide: const BorderSide(color: AppColors.primaryGreenLight, width: 1.8),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.darkSurface,
-        indicatorColor: AppColors.genieTealContainerDark,
+        indicatorColor: AppColors.primaryGreenContainerDark,
         elevation: 8,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppColors.genieTealDark,
+              color: AppColors.primaryGreenLight,
             );
           }
           return const TextStyle(

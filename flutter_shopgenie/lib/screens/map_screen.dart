@@ -1,19 +1,32 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import '../features/nearby_shops/services/location_service.dart';
+import '../features/nearby_shops/widgets/shop_map_view.dart';
 import '../models/store_item.dart';
-import '../services/shop_api_service.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
+
+const _googleMapsKeyConfigured = bool.fromEnvironment(
+  'GOOGLE_MAPS_API_KEY_CONFIGURED',
+);
 
 class MapScreen extends StatefulWidget {
   final String currentLocation;
   final Function(StoreItem) onSelectStore;
   final VoidCallback onOpenScanner;
+  final LocationService locationService;
+  final Future<List<StoreItem>> Function()? loadShops;
 
   const MapScreen({
     super.key,
     required this.currentLocation,
     required this.onSelectStore,
     required this.onOpenScanner,
+    this.locationService = const GeolocatorLocationService(),
+    this.loadShops,
   });
 
   @override
@@ -21,711 +34,843 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  StoreItem? _selectedStore;
+  static const _shopCacheDuration = Duration(minutes: 2);
+  static List<StoreItem>? _cachedShops;
+  static DateTime? _shopsCachedAt;
+
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  GoogleMapController? _mapController;
+  List<StoreItem> _shops = const [];
+  StoreItem? _selectedShop;
   String _selectedCategory = 'All';
-  Future<List<StoreItem>>? _shopsFuture;
-  List<StoreItem> _cachedStores = const [];
+  DeviceLocation? _deviceLocation;
+  String? _shopError;
+  String? _locationMessage;
+  bool _isLoadingShops = true;
+  bool _isShowingCachedShops = false;
+  bool _isLoadingLocation = false;
+  bool _showList = false;
+  String _searchQuery = '';
+  LocationAccessStatus? _locationStatus;
+
+  bool get _supportsNativeMap =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
+  bool get _usesSharedShopCache => widget.loadShops == null;
+
+  List<String> get _categories => ShopService.categoriesFor(_shops);
+
+  List<StoreItem> get _filteredShops {
+    final query = _searchQuery.trim().toLowerCase();
+    final shops = ShopService.filterStores(
+      stores: _shops,
+      query: query,
+      category: _selectedCategory,
+    );
+    if (_deviceLocation == null) return shops;
+    return [...shops]..sort(
+        (a, b) => _distanceInMeters(a).compareTo(_distanceInMeters(b)),
+      );
+  }
+
+  List<StoreItem> get _mappedShops =>
+      _filteredShops.where(hasValidCoordinates).toList(growable: false);
 
   @override
   void initState() {
     super.initState();
-    _loadShops();
-  }
-
-  void _loadShops() {
-    setState(() {
-      _shopsFuture = ShopService.fetchShops().then((stores) {
-        if (mounted) setState(() => _cachedStores = stores);
-        return stores;
-      });
+    final cachedShops = _cachedShops;
+    final cachedAt = _shopsCachedAt;
+    if (cachedShops != null && cachedAt != null) {
+      _shops = cachedShops;
+      _isShowingCachedShops = true;
+      _isLoadingShops = false;
+      if (DateTime.now().difference(cachedAt) >= _shopCacheDuration) {
+        _loadShops();
+      }
+    } else {
+      _loadShops();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showLocationRationale();
     });
   }
 
-  void _retryShops() {
-    _loadShops();
-  }
-
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _mapController?.dispose();
+    super.dispose();
+  }
 
-    final filteredStores = ShopService.filterStores(
-      stores: _cachedStores,
-      category: _selectedCategory,
-    );
+  Future<void> _loadShops() async {
+    setState(() {
+      _isLoadingShops = true;
+      _shopError = null;
+    });
+    try {
+      final shops = await (widget.loadShops ?? ShopService.fetchShops)();
+      if (!mounted) return;
+      setState(() {
+        _shops = shops;
+        _isLoadingShops = false;
+        _isShowingCachedShops = false;
+        if (_usesSharedShopCache) {
+          _cachedShops = shops;
+          _shopsCachedAt = DateTime.now();
+        }
+        if (_selectedShop != null &&
+            !shops.any((shop) => shop.id == _selectedShop!.id)) {
+          _selectedShop = null;
+        }
+      });
+      _moveCameraToAvailableShops();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _shopError = error.toString();
+        _isLoadingShops = false;
+        _isShowingCachedShops = _shops.isNotEmpty;
+      });
+    }
+  }
 
-    return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : const Color(0xFFE2E8F0),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // 1. Simulated Interactive Map Canvas
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF0F1715)
-                      : const Color(0xFFE2E8F0),
-                  image: const DecorationImage(
-                    image: NetworkImage(
-                      'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80',
-                    ),
-                    fit: BoxFit.cover,
-                    opacity: 0.12,
-                  ),
-                ),
-                child: CustomPaint(
-                  painter: _MapGridPainter(isDark: isDark),
-                  child: Stack(
-                    children: [
-                      // Concentric radar scan rings
-                      Center(
-                        child: Container(
-                          width: 280,
-                          height: 280,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color:
-                                  AppColors.genieTeal.withValues(alpha: 0.18),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color:
-                                  AppColors.genieTeal.withValues(alpha: 0.28),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
+  Future<void> _showLocationRationale() async {
+    final shouldContinue = await _confirmLocationUse();
+    if (shouldContinue && mounted) {
+      await _requestLocation();
+    }
+  }
 
-                      // User GPS Location Pin (Center)
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[600],
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.blue.withValues(alpha: 0.4),
-                                    blurRadius: 12,
-                                    spreadRadius: 3,
-                                  ),
-                                ],
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: const Icon(
-                                Icons.person_pin_circle_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                              child: const Text(
-                                'You are here',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Store Markers on Map
-                      FutureBuilder<List<StoreItem>>(
-                        future: _shopsFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.genieTeal,
-                                ),
-                              ),
-                            );
-                          }
-                          if (snapshot.hasError) {
-                            final error = snapshot.error.toString();
-                            final isNetwork = snapshot.error != null &&
-                                isNetworkFailure(snapshot.error!);
-                            return _buildErrorOverlay(error, isNetwork);
-                          }
-                          final stores = snapshot.data ?? const <StoreItem>[];
-                          if (stores.isEmpty) {
-                            return _buildEmptyOverlay();
-                          }
-                          // Show up to five markers so the layout stays stable.
-                          final markers = stores.take(5).toList();
-                          return _markerLayer(
-                            markers: markers,
-                            selectedId: _selectedStore?.id,
-                            onSelected: (store) =>
-                                setState(() => _selectedStore = store),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+  Future<bool> _confirmLocationUse() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Find shops near you'),
+            content: const Text(
+              'Your location helps center the map and sort nearby shops. '
+              'You can still browse the shop list without sharing your location.',
             ),
-
-            // 2. Top Floating Controls: Area pill and Category Bar
-            Positioned(
-              top: 12,
-              left: 16,
-              right: 16,
-              child: Column(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.radar_rounded,
-                          size: 18,
-                          color: AppColors.genieTeal,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Searching stores within 2 km of ${widget.currentLocation.split(',')[0]}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.genieTeal.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${filteredStores.length} Live',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.genieTeal,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Categories horizontal row
-                  SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: ShopService.categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemBuilder: (context, idx) {
-                        final cat = ShopService.categories[idx];
-                        final isSelected = cat == _selectedCategory;
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = cat;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.genieTeal
-                                  : (isDark
-                                      ? AppColors.darkSurface
-                                      : Colors.white),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                cat,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Not now'),
               ),
-            ),
-
-            // 3. Bottom Store Card Preview
-            if (_selectedStore != null)
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : const Color(0xFFE2E8F0),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color:
-                                  AppColors.genieTeal.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              _selectedStore!.emoji,
-                              style: const TextStyle(fontSize: 26),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _selectedStore!.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.sparkAmber
-                                            .withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        _selectedStore!.rating,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFFB45309),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${_selectedStore!.category} · ${_selectedStore!.distance}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.65),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _selectedStore!.address,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.45),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          if (_selectedStore!.selfCheckout)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: widget.onOpenScanner,
-                                icon: const Icon(Icons.auto_awesome, size: 16),
-                                label: const Text('AI Product Scan',
-                                    style: TextStyle(fontSize: 12)),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.genieTeal,
-                                  side: const BorderSide(
-                                      color: AppColors.genieTeal),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (_selectedStore!.selfCheckout)
-                            const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () =>
-                                  widget.onSelectStore(_selectedStore!),
-                              icon: const Icon(Icons.storefront_rounded,
-                                  size: 16),
-                              label: const Text('Enter Shop',
-                                  style: TextStyle(fontSize: 12)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.genieTeal,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Continue'),
               ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _requestLocationWithRationale() async {
+    final shouldContinue = await _confirmLocationUse();
+    if (shouldContinue && mounted) {
+      await _requestLocation();
+    }
+  }
+
+  Future<void> _requestLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+      _locationMessage = null;
+    });
+    try {
+      final result = await widget.locationService.getCurrentLocation();
+      if (!mounted) return;
+      setState(() {
+        _isLoadingLocation = false;
+        _locationStatus = result.status;
+        _deviceLocation = result.location;
+        _locationMessage = _messageForLocationStatus(result.status);
+      });
+      if (result.location case final location?) {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(location.latitude, location.longitude),
+            14,
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingLocation = false;
+        _locationStatus = LocationAccessStatus.unavailable;
+        _locationMessage =
+            'Could not get your location. You can still browse shops.';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Location unavailable: $error')),
+      );
+    }
+  }
+
+  Future<void> _openLocationSettings() async {
+    final opened = await widget.locationService.openAppSettings();
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open app settings.')),
+      );
+    }
+  }
+
+  String? _messageForLocationStatus(LocationAccessStatus status) {
+    return switch (status) {
+      LocationAccessStatus.granted => null,
+      LocationAccessStatus.denied =>
+        'Location permission was denied. You can still browse all shops.',
+      LocationAccessStatus.permanentlyDenied =>
+        'Location permission is off. Enable it in app settings to center the map.',
+      LocationAccessStatus.serviceDisabled =>
+        'Turn on your device location to find nearby shops.',
+      LocationAccessStatus.unavailable =>
+        'Location is unavailable. You can still browse all shops.',
+    };
+  }
+
+  double _distanceInMeters(StoreItem shop) {
+    final location = _deviceLocation;
+    if (location == null || !hasValidCoordinates(shop)) {
+      return double.infinity;
+    }
+    return Geolocator.distanceBetween(
+      location.latitude,
+      location.longitude,
+      shop.lat!,
+      shop.lng!,
     );
   }
 
-  Widget _buildErrorOverlay(String error, bool isNetwork) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : const Color(0xFFFCA5A5),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isNetwork ? Icons.wifi_off_rounded : Icons.cloud_off_rounded,
-              size: 40,
-              color: const Color(0xFFDC2626),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Could not load shops',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              isNetwork
-                  ? 'Check your connection and try again.'
-                  : error.isNotEmpty
-                      ? error
-                      : 'An unexpected error occurred.',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _retryShops,
-              icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.genieTeal,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _displayDistance(StoreItem shop) {
+    if (_deviceLocation != null && hasValidCoordinates(shop)) {
+      final meters = _distanceInMeters(shop);
+      return meters < 1000
+          ? '${meters.round()} m away'
+          : '${(meters / 1000).toStringAsFixed(1)} km away';
+    }
+    return shop.distance.trim();
   }
 
-  Widget _buildEmptyOverlay() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.store_mall_directory_outlined,
-              size: 48,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'No shops available',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Try again later or check another neighbourhood.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Stable marker positions used when live shops are available. The backend
-  /// does not provide lat/lng, so we place markers on a fixed grid layout.
-  /// When a shop has no coordinates we still render it (no crash) using its
-  /// grid slot; we never invent latitude/longitude values.
-  static const _markerPositions = [
-    (0.28, 0.32),
-    (0.22, 0.65),
-    (0.42, 0.20),
-    (0.40, 0.72),
-    (0.58, 0.52),
-  ];
-
-  Widget _markerLayer({
-    required List<StoreItem> markers,
-    required String? selectedId,
-    required ValueChanged<StoreItem> onSelected,
-  }) {
-    final size = MediaQuery.of(context).size;
-    final children = <Widget>[];
-    for (var i = 0; i < markers.length; i++) {
-      final store = markers[i];
-      final pos = _markerPositions[i % _markerPositions.length];
-      final isSelected = selectedId == store.id;
-      children.add(
-        Positioned(
-          top: size.height * pos.$1,
-          left: size.width * pos.$2,
-          child: _StorePin(
-            store: store,
-            isSelected: isSelected,
-            onTap: () => onSelected(store),
-          ),
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    _moveCameraToAvailableShops();
+    final location = _deviceLocation;
+    if (location != null) {
+      controller.moveCamera(
+        CameraUpdate.newLatLng(
+          LatLng(location.latitude, location.longitude),
         ),
       );
     }
-    return Stack(children: children);
   }
-}
 
-class _StorePin extends StatelessWidget {
-  const _StorePin({
-    required this.store,
-    required this.isSelected,
-    required this.onTap,
-  });
+  void _moveCameraToAvailableShops() {
+    if (_deviceLocation != null || _mappedShops.isEmpty) return;
+    final firstShop = _mappedShops.first;
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(firstShop.lat!, firstShop.lng!),
+        12,
+      ),
+    );
+  }
 
-  final StoreItem store;
-  final bool isSelected;
-  final VoidCallback onTap;
+  void _selectShop(StoreItem shop) {
+    setState(() => _selectedShop = shop);
+    if (hasValidCoordinates(shop)) {
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(shop.lat!, shop.lng!),
+          15,
+        ),
+      );
+    }
+  }
+
+  void _setSearchQuery(String query) {
+    setState(() {
+      _searchQuery = query;
+      if (_selectedShop != null &&
+          !ShopService.filterStores(
+            stores: [_selectedShop!],
+            query: query,
+          ).isNotEmpty) {
+        _selectedShop = null;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text(
+          'Nearby Shops',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            tooltip: _showList ? 'Show map' : 'Show list',
+            onPressed: () => setState(() => _showList = !_showList),
+            icon: Icon(_showList ? Icons.map_outlined : Icons.list_rounded),
+          ),
+        ],
+      ),
+      body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.genieTeal : Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isSelected ? Colors.white : AppColors.genieTeal,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Column(
               children: [
-                Text(store.emoji, style: const TextStyle(fontSize: 14)),
-                const SizedBox(width: 4),
-                Text(
-                  store.name.split(' ')[0],
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : Colors.black87,
+                TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  onChanged: _setSearchQuery,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Search shops',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searchQuery.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Clear search',
+                            onPressed: () {
+                              _searchController.clear();
+                              _setSearchQuery('');
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                    filled: true,
+                    fillColor: theme.colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide:
+                          BorderSide(color: theme.colorScheme.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide:
+                          BorderSide(color: theme.colorScheme.outlineVariant),
+                    ),
                   ),
                 ),
-                if (store.selfCheckout) ...[
-                  const SizedBox(width: 3),
-                  Icon(
-                    Icons.bolt_rounded,
-                    size: 13,
-                    color:
-                        isSelected ? AppColors.sparkAmber : AppColors.genieTeal,
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _categories.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 6),
+                    itemBuilder: (context, index) {
+                      final category = _categories[index];
+                      final isSelected = category == _selectedCategory;
+                      return ChoiceChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedCategory = category;
+                            if (_selectedShop != null &&
+                                !ShopService.filterStores(
+                                  stores: [_selectedShop!],
+                                  category: category,
+                                ).isNotEmpty) {
+                              _selectedShop = null;
+                            }
+                          });
+                        },
+                      );
+                    },
                   ),
-                ],
+                ),
               ],
             ),
           ),
-          Icon(
-            Icons.arrow_drop_down_rounded,
-            size: 20,
-            color: isSelected ? AppColors.genieTeal : Colors.white,
+          if (_locationMessage != null)
+            _LocationStatusBanner(
+              message: _locationMessage!,
+              showSettings:
+                  _locationStatus == LocationAccessStatus.permanentlyDenied,
+              onOpenSettings: _openLocationSettings,
+            ),
+          if (_shopError != null)
+            MaterialBanner(
+              content: Text(
+                _isShowingCachedShops
+                    ? 'Could not connect to ShopGenie. Showing previously loaded shops.'
+                    : 'Could not connect to ShopGenie. Retry to load shops.',
+              ),
+              leading: const Icon(Icons.wifi_off_rounded),
+              actions: [
+                TextButton(
+                  onPressed: _isLoadingShops ? null : _loadShops,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          if (_isShowingCachedShops && _shopError == null)
+            MaterialBanner(
+              content: const Text('Showing recently loaded shops.'),
+              leading: const Icon(Icons.cloud_done_outlined),
+              actions: [
+                TextButton(
+                  onPressed: _isLoadingShops ? null : _loadShops,
+                  child: const Text('Refresh'),
+                ),
+              ],
+            ),
+          Expanded(
+            child: _showList ? _buildShopList() : _buildMapArea(),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapArea() {
+    final initialTarget = _deviceLocation != null
+        ? LatLng(_deviceLocation!.latitude, _deviceLocation!.longitude)
+        : _mappedShops.isNotEmpty
+            ? LatLng(_mappedShops.first.lat!, _mappedShops.first.lng!)
+            : const LatLng(0, 0);
+    final markers = buildShopMarkers(
+      _filteredShops,
+      onShopSelected: _selectShop,
+    );
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: _supportsNativeMap && _googleMapsKeyConfigured
+              ? ShopMapView(
+                  key: const ValueKey('shopgenie-google-map'),
+                  initialTarget: initialTarget,
+                  markers: markers,
+                  onMapCreated: _onMapCreated,
+                  myLocationEnabled: _deviceLocation != null,
+                )
+              : _MapUnavailable(
+                  message: !_supportsNativeMap
+                      ? 'Google Maps is available in the Android and iOS apps.'
+                      : 'Configure a restricted Google Maps API key to display the map. You can browse shops in list view.',
+                  onShowList: () => setState(() => _showList = true),
+                ),
+        ),
+        if (_isLoadingShops)
+          const Positioned(
+            top: 12,
+            left: 16,
+            child: _MapLoadingIndicator(),
+          ),
+        Positioned(
+          right: 16,
+          bottom: _selectedShop == null ? 24 : 190,
+          child: FloatingActionButton.small(
+            heroTag: 'my-location',
+            tooltip: 'Use my current location',
+            onPressed:
+                _isLoadingLocation ? null : _requestLocationWithRationale,
+            child: _isLoadingLocation
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location_rounded),
+          ),
+        ),
+        if (!_isLoadingShops && _shops.isEmpty && _shopError == null)
+          const Positioned(
+            left: 16,
+            right: 16,
+            top: 72,
+            child: _MapNotice(
+              icon: Icons.store_mall_directory_outlined,
+              message: 'No shops are available yet.',
+            ),
+          ),
+        if (!_isLoadingShops && _shops.isNotEmpty && _mappedShops.isEmpty)
+          Positioned(
+            left: 16,
+            right: 16,
+            top: 72,
+            child: _MapNotice(
+              icon: Icons.location_off_outlined,
+              message:
+                  '${_filteredShops.length} shops found, but none have map coordinates yet.',
+              actionLabel: 'View list',
+              onAction: () => setState(() => _showList = true),
+            ),
+          ),
+        if (_selectedShop != null)
+          Positioned(
+            left: 16,
+            right: 72,
+            bottom: 16,
+            child: _ShopPreviewCard(
+              shop: _selectedShop!,
+              distance: _displayDistance(_selectedShop!),
+              onClose: () => setState(() => _selectedShop = null),
+              onViewShop: () => widget.onSelectStore(_selectedShop!),
+              onOpenScanner: widget.onOpenScanner,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildShopList() {
+    if (_isLoadingShops && _shops.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_shops.isEmpty) {
+      return _ShopListEmptyState(
+        message: _shopError == null
+            ? 'There are no registered shops to show yet.'
+            : 'Could not load shops. Check your connection and try again.',
+        onRetry: _shopError == null ? null : _loadShops,
+      );
+    }
+
+    final shops = _filteredShops;
+    if (shops.isEmpty) {
+      return const _ShopListEmptyState(
+        message: 'No shops match your search.',
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadShops,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        itemCount: shops.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final shop = shops[index];
+          final distance = _displayDistance(shop);
+          return Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              leading: CircleAvatar(
+                backgroundColor: AppColors.genieTeal.withValues(alpha: 0.12),
+                child: Text(shop.emoji, style: const TextStyle(fontSize: 22)),
+              ),
+              title: Text(
+                shop.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  [
+                    if (shop.category.isNotEmpty) shop.category,
+                    if (shop.address.isNotEmpty) shop.address,
+                    if (distance.isNotEmpty) distance,
+                    if (!hasValidCoordinates(shop)) 'Map location unavailable',
+                  ].join(' · '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                widget.onSelectStore(shop);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _LocationStatusBanner extends StatelessWidget {
+  const _LocationStatusBanner({
+    required this.message,
+    required this.showSettings,
+    required this.onOpenSettings,
+  });
+
+  final String message;
+  final bool showSettings;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.location_on_outlined, size: 18),
+          const SizedBox(width: 8),
+          Expanded(child: Text(message, style: const TextStyle(fontSize: 12))),
+          if (showSettings)
+            TextButton(
+              onPressed: onOpenSettings,
+              child: const Text('Settings'),
+            ),
         ],
       ),
     );
   }
 }
 
-class _MapGridPainter extends CustomPainter {
-  final bool isDark;
-  _MapGridPainter({required this.isDark});
+class _MapUnavailable extends StatelessWidget {
+  const _MapUnavailable({
+    required this.message,
+    required this.onShowList,
+  });
+
+  final String message;
+  final VoidCallback onShowList;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = isDark
-          ? Colors.white.withValues(alpha: 0.04)
-          : Colors.black.withValues(alpha: 0.04)
-      ..strokeWidth = 1.0;
-
-    const step = 40.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.map_outlined, size: 48),
+              const SizedBox(height: 12),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: onShowList,
+                icon: const Icon(Icons.list_rounded),
+                label: const Text('Browse shop list'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+}
+
+class _MapLoadingIndicator extends StatelessWidget {
+  const _MapLoadingIndicator();
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 3,
+      borderRadius: BorderRadius.circular(20),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text('Loading shops', style: TextStyle(fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapNotice extends StatelessWidget {
+  const _MapNotice({
+    required this.icon,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 3,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.genieTeal),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(message, style: const TextStyle(fontSize: 12))),
+            if (actionLabel != null)
+              TextButton(onPressed: onAction, child: Text(actionLabel!)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShopPreviewCard extends StatelessWidget {
+  const _ShopPreviewCard({
+    required this.shop,
+    required this.distance,
+    required this.onClose,
+    required this.onViewShop,
+    required this.onOpenScanner,
+  });
+
+  final StoreItem shop;
+  final String distance;
+  final VoidCallback onClose;
+  final VoidCallback onViewShop;
+  final VoidCallback onOpenScanner;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 8,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppColors.genieTeal.withValues(alpha: 0.12),
+                  child: Text(shop.emoji, style: const TextStyle(fontSize: 22)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        shop.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        [
+                          if (shop.category.isNotEmpty) shop.category,
+                          if (distance.isNotEmpty) distance,
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Close shop preview',
+                  onPressed: onClose,
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            if (shop.address.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                shop.address,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (shop.selfCheckout) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onOpenScanner,
+                      icon: const Icon(Icons.auto_awesome, size: 17),
+                      label: const Text('AI Scan'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: onViewShop,
+                    icon: const Icon(Icons.storefront_rounded, size: 18),
+                    label: const Text('View shop'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShopListEmptyState extends StatelessWidget {
+  const _ShopListEmptyState({
+    required this.message,
+    this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.store_mall_directory_outlined,
+              size: 48,
+              color: AppColors.genieTeal,
+            ),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            if (onRetry != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }

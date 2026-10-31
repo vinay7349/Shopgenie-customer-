@@ -1,18 +1,30 @@
-node_modules/
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
 build/
-dist/
 coverage/
+*.iml
+local.properties
+*.apk
+*.aab
+
+# Android / IDE
+.gradle/
+.kotlin/
+.idea/
+android-sdk/
+
+# Local configuration and generated files
 .DS_Store
 *.log
 .env*
 !.env.example
-android-sdk/
-.gradle/
-.idea/
-*.apk
-*.aab
-local.properties
-.dart_tool/
+node_modules/
+package-lock.json
+dist/
 venv/
 **/venv/
 __pycache__/

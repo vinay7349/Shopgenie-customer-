@@ -4,7 +4,7 @@ class OfferItem {
   final String storeName;
   final String title;
   final String discount;
-  final String code;
+  final String? code;
   final String description;
   final String validTill;
   final String category;
@@ -15,35 +15,48 @@ class OfferItem {
     required this.storeName,
     required this.title,
     required this.discount,
-    required this.code,
+    this.code,
     required this.description,
     required this.validTill,
     required this.category,
   });
 
   factory OfferItem.fromJson(Map<String, dynamic> json) {
-    final discountVal = json['discount_value']?.toString() ?? '0';
-    final discountType = json['discount_type']?.toString() ?? 'PERCENTAGE';
-    final discountStr = discountType == 'PERCENTAGE'
-        ? '${double.tryParse(discountVal)?.toStringAsFixed(0) ?? discountVal}% OFF'
-        : '₹$discountVal OFF';
-
-    String validDate = 'Limited Time';
-    if (json['end_date'] != null) {
-      final raw = json['end_date'].toString();
-      validDate = raw.contains('T') ? raw.split('T').first : raw;
+    final id = json['id']?.toString();
+    final shopId = json['shop']?.toString();
+    final title = json['title']?.toString();
+    final discountValue = json['discount_value']?.toString();
+    final discountType = json['discount_type']?.toString();
+    final endDate = json['end_date']?.toString();
+    if (id == null ||
+        shopId == null ||
+        title == null ||
+        discountValue == null ||
+        discountType == null ||
+        endDate == null) {
+      throw const FormatException(
+        'Offer response is missing required fields.',
+      );
     }
+    final parsedDiscount = double.tryParse(discountValue);
+    if (parsedDiscount == null) {
+      throw const FormatException('Offer discount_value must be numeric.');
+    }
+    final discountStr = discountType == 'PERCENTAGE'
+        ? '${parsedDiscount.toStringAsFixed(0)}% OFF'
+        : '₹${parsedDiscount.toStringAsFixed(2)} OFF';
+    final validDate = endDate.contains('T') ? endDate.split('T').first : endDate;
 
     return OfferItem(
-      id: json['id']?.toString() ?? '',
-      storeId: json['shop']?.toString() ?? '',
-      storeName: json['shop_name']?.toString() ?? 'Partner Store',
-      title: json['title']?.toString() ?? '',
+      id: id,
+      storeId: shopId,
+      storeName: json['shop_name']?.toString() ?? '',
+      title: title,
       discount: discountStr,
-      code: 'OFFER${json['id'] ?? ''}',
+      code: json['code']?.toString(),
       description: json['description']?.toString() ?? '',
       validTill: 'Valid till $validDate',
-      category: json['scope']?.toString() ?? 'General',
+      category: json['scope']?.toString() ?? '',
     );
   }
 }

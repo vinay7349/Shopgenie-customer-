@@ -72,21 +72,23 @@ Map<String, dynamic> _productJson({
 void main() {
   group('ProductItem.fromJson', () {
     test('parses valid product with numeric fields', () {
-    final p = ProductItem.fromJson(_productJson(
-      id: 42,
-      shop: 42,
-      price: '8.50',
-      mrp: '10.00',
-      stock: '5.000',
-    ));
+      final p = ProductItem.fromJson(_productJson(
+        id: 42,
+        shop: 42,
+        price: '8.50',
+        mrp: '10.00',
+        stock: '5.000',
+      ));
 
-    expect(p.id, '42');
-    expect(p.storeId, '42');
+      expect(p.id, '42');
+      expect(p.storeId, '42');
       expect(p.storeName, 'Test Shop');
       expect(p.name, 'Test Product');
       expect(p.category, 'Beverages');
       expect(p.brand, 'Test Brand');
       expect(p.size, '500 ml');
+      expect(p.unit, 'PIECE');
+      expect(p.imageUrl, 'https://example.com/image.jpg');
       expect(p.price, 8.5);
       expect(p.mrp, 10.0);
       expect(p.stock, 5.0);
@@ -160,15 +162,21 @@ void main() {
       final p = ProductItem.fromJson({
         'id': 9,
         'name': 'Minimal Product',
+        'shop': 4,
+        'selling_price': '0.00',
+        'mrp': '0.00',
+        'stock_quantity': '0.000',
       });
 
       expect(p.id, '9');
       expect(p.name, 'Minimal Product');
-      expect(p.storeId, '');
+      expect(p.storeId, '4');
       expect(p.storeName, '');
       expect(p.brand, '');
       expect(p.category, '');
       expect(p.size, '');
+      expect(p.unit, 'PIECE');
+      expect(p.imageUrl, isNull);
       expect(p.price, 0.0);
       expect(p.mrp, 0.0);
       expect(p.stock, 0.0);
@@ -182,15 +190,21 @@ void main() {
       final p = ProductItem.fromJson({
         'id': 1,
         'name': 'Product',
+        'shop': 1,
+        'selling_price': '1.00',
+        'mrp': '1.00',
+        'stock_quantity': '1.000',
         'brand': null,
         'category': null,
         'size': null,
+        'image_url': null,
         'description': null,
       });
 
       expect(p.brand, '');
       expect(p.category, '');
       expect(p.size, '');
+      expect(p.imageUrl, isNull);
       expect(p.description, '');
     });
 
@@ -199,6 +213,9 @@ void main() {
         'id': 1,
         'name': 'Product',
         'shop': 7,
+        'selling_price': '1.00',
+        'mrp': '1.00',
+        'stock_quantity': '1.000',
       });
 
       expect(p.storeId, '7');
@@ -399,7 +416,7 @@ void main() {
       expect(products[0].name, 'Valid Product');
     });
 
-    test('propagates SocketException on network failure', () async {
+    test('wraps network failures in a network ShopApiException', () async {
       final client = MockHttpClient(
         handler: (request) async {
           throw SocketException('Connection refused');
@@ -409,7 +426,9 @@ void main() {
       final service = ShopApiService(client: client);
       expect(
         () => service.fetchProductsForShop('1'),
-        throwsA(isA<SocketException>()),
+        throwsA(
+          predicate<ShopApiException>((error) => error.isNetworkError),
+        ),
       );
     });
   });

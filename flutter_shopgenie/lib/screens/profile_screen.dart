@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../models/user_role.dart';
 import '../theme/app_colors.dart';
 
@@ -7,7 +9,10 @@ class ProfileScreen extends StatefulWidget {
   final ValueChanged<UserRole> onRoleChanged;
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final VoidCallback onLogin;
+  final VoidCallback onRegister;
   final VoidCallback? onBack;
+  final VoidCallback? onLogout;
 
   const ProfileScreen({
     super.key,
@@ -15,7 +20,10 @@ class ProfileScreen extends StatefulWidget {
     required this.onRoleChanged,
     required this.themeMode,
     required this.onThemeModeChanged,
+    required this.onLogin,
+    required this.onRegister,
     this.onBack,
+    this.onLogout,
   });
 
   @override
@@ -23,78 +31,10 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _name = 'Vinay Kharvik';
-  String _email = 'vinaykharvik09@gmail.com';
-  String _phone = '+91 98450 12345';
-  String _area = 'Koramangala 4th Block, Bengaluru';
-
   void _showEditProfileDialog() {
-    final nameCtrl = TextEditingController(text: _name);
-    final emailCtrl = TextEditingController(text: _email);
-    final phoneCtrl = TextEditingController(text: _phone);
-    final areaCtrl = TextEditingController(text: _area);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Edit Profile Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline, size: 20)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailCtrl,
-                decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined, size: 20)),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone_outlined, size: 20)),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: areaCtrl,
-                decoration: const InputDecoration(labelText: 'Neighbourhood Area', prefixIcon: Icon(Icons.location_on_outlined, size: 20)),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB), 
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              if (nameCtrl.text.trim().isNotEmpty && emailCtrl.text.trim().isNotEmpty) {
-                setState(() {
-                  _name = nameCtrl.text.trim();
-                  _email = emailCtrl.text.trim();
-                  _phone = phoneCtrl.text.trim();
-                  _area = areaCtrl.text.trim();
-                });
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profile details updated successfully!')),
-                );
-              }
-            },
-            child: const Text('Save Changes'),
-          ),
-        ],
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Profile editing is not available from the backend.'),
       ),
     );
   }
@@ -108,34 +48,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.receipt_long_rounded, color: Color(0xFF2563EB)),
             SizedBox(width: 8),
-            Text('My Orders & History', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('My Orders & History',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         content: const SizedBox(
           width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFEFF6FF), child: Icon(Icons.shopping_bag_outlined, color: Color(0xFF2563EB))),
-                title: Text('The Old Coffee Roasters', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Estate Arabica (x1) · Croissant (x1) · ₹640', style: TextStyle(fontSize: 11)),
-                trailing: Text('PAID', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
-              ),
-              Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFEFF6FF), child: Icon(Icons.shopping_bag_outlined, color: Color(0xFF2563EB))),
-                title: Text('Nature Green Market', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Avocados (x2) · Almond Milk (x1) · ₹410', style: TextStyle(fontSize: 11)),
-                trailing: Text('PAID', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
-              ),
-            ],
-          ),
+          child: Text('Order history is not available from the backend.'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
         ],
       ),
     );
@@ -150,32 +73,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.favorite_rounded, color: Color(0xFFE11D48)),
             SizedBox(width: 8),
-            Text('Saved Products', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Saved Products',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         content: const SizedBox(
           width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFFFF1F2), child: Text('☕')),
-                title: Text('Estate Arabica Coffee', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('The Old Coffee Roasters · ₹460', style: TextStyle(fontSize: 11)),
-              ),
-              Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFFFF1F2), child: Text('🥑')),
-                title: Text('Hass Avocados (Pack of 2)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Nature Green Market · ₹220', style: TextStyle(fontSize: 11)),
-              ),
-            ],
-          ),
+          child: Text('Saved products are not available from the backend.'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
         ],
       ),
     );
@@ -190,32 +98,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.storefront_rounded, color: Color(0xFF059669)),
             SizedBox(width: 8),
-            Text('My Followed Shops', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('My Followed Shops',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         content: const SizedBox(
           width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFECFDF5), child: Icon(Icons.store, color: Color(0xFF059669))),
-                title: Text('The Old Coffee Roasters', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Artisanal Roastery · 4.8 ★', style: TextStyle(fontSize: 11)),
-              ),
-              Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFECFDF5), child: Icon(Icons.store, color: Color(0xFF059669))),
-                title: Text('Nature Green Market', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Organic Groceries · 4.9 ★', style: TextStyle(fontSize: 11)),
-              ),
-            ],
-          ),
+          child: Text('Followed shops are not available from the backend.'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
         ],
       ),
     );
@@ -230,32 +123,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.location_on_rounded, color: Color(0xFFD97706)),
             SizedBox(width: 8),
-            Text('Delivery Addresses', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Delivery Addresses',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         content: const SizedBox(
           width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFFEF3C7), child: Icon(Icons.home_outlined, color: Color(0xFFD97706))),
-                title: Text('Home (Default)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Flat 402, Green Glen Layout, Koramangala 4th Block, Bengaluru', style: TextStyle(fontSize: 11)),
-              ),
-              Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFFEF3C7), child: Icon(Icons.work_outline, color: Color(0xFFD97706))),
-                title: Text('Work Office', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Prestige Tech Park, Marathahalli-Sarjapur Ring Rd, Bengaluru', style: TextStyle(fontSize: 11)),
-              ),
-            ],
-          ),
+          child: Text('Saved addresses are not available from the backend.'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
         ],
       ),
     );
@@ -270,32 +148,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.credit_card_rounded, color: Color(0xFF4F46E5)),
             SizedBox(width: 8),
-            Text('Payment Methods', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Payment Methods',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         content: const SizedBox(
           width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFEEF2FF), child: Icon(Icons.qr_code_2_rounded, color: Color(0xFF4F46E5))),
-                title: Text('Google Pay (UPI)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('vinaykharvik@okhdfcbank · Primary', style: TextStyle(fontSize: 11)),
-              ),
-              Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(backgroundColor: Color(0xFFEEF2FF), child: Icon(Icons.credit_card, color: Color(0xFF4F46E5))),
-                title: Text('HDFC Millennia Credit Card', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('•••• •••• •••• 4092 (Expires 08/28)', style: TextStyle(fontSize: 11)),
-              ),
-            ],
-          ),
+          child: Text('Payment methods are not available from the backend.'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
         ],
       ),
     );
@@ -310,30 +173,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.notifications_active_rounded, color: Color(0xFF9333EA)),
             SizedBox(width: 8),
-            Text('Notifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Notifications',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: true,
-              onChanged: (v) {},
-              title: const Text('Push Notifications', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-              subtitle: const Text('Receive product discovery and store alerts', style: TextStyle(fontSize: 11)),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: true,
-              onChanged: (v) {},
-              title: const Text('Nearby Store Offers', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-              subtitle: const Text('Deals from followed neighborhood shops', style: TextStyle(fontSize: 11)),
-            ),
-          ],
+        content: const Text(
+          'Notification preferences are not available from the backend.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
         ],
       ),
     );
@@ -344,17 +193,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('Are you sure you want to sign out of your ShopGenie account on this device?'),
+        title: const Text('Sign Out',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+            'Are you sure you want to sign out of your ShopGenie account on this device?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-            onPressed: () {
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white),
+            onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Signed out successfully.')),
-              );
+              await context.read<AuthProvider>().logout();
+              widget.onLogout?.call();
             },
             child: const Text('Sign Out'),
           ),
@@ -367,18 +220,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final user = context.watch<AuthProvider>().user;
+    final name = user?.username ?? '';
+    final email = user?.email ?? '';
+    final initials = user == null
+        ? 'G'
+        : name.trim().isEmpty
+            ? '?'
+            : name
+                .trim()
+                .split(RegExp(r'\s+'))
+                .take(2)
+                .map((part) => part[0].toUpperCase())
+                .join();
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Account & Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: const Text('Account & Profile',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         elevation: 0,
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
         actions: const [
           Center(
             child: Padding(
               padding: EdgeInsets.only(right: 16),
-              child: Text('ShopGenie Customer', style: TextStyle(color: Color(0xFF2563EB), fontSize: 11, fontWeight: FontWeight.bold)),
+              child: Text('ShopGenie Customer',
+                  style: TextStyle(
+                      color: Color(0xFF2563EB),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -400,7 +272,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+              border: Border.all(
+                  color:
+                      isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,7 +294,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(16),
@@ -428,11 +303,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome_rounded, color: Colors.amber, size: 14),
+                          Icon(Icons.auto_awesome_rounded,
+                              color: Colors.amber, size: 14),
                           SizedBox(width: 4),
                           Text(
                             'Discover. Shop. Support Local.',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -455,25 +334,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             CircleAvatar(
                               radius: 36,
-                              backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-                              child: const CircleAvatar(
+                              backgroundColor:
+                                  isDark ? AppColors.darkSurface : Colors.white,
+                              child: CircleAvatar(
                                 radius: 32,
                                 backgroundColor: Color(0xFF2563EB),
-                                child: Text('VK', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20)),
+                                child: Text(
+                                  initials,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                  ),
+                                ),
                               ),
                             ),
-                            OutlinedButton.icon(
-                              onPressed: _showEditProfileDialog,
-                              icon: const Icon(Icons.edit_outlined, size: 14),
-                              label: const Text('Edit Profile', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF2563EB),
-                                backgroundColor: const Color(0xFFEFF6FF),
-                                side: const BorderSide(color: Color(0xFFBFDBFE)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            if (user != null)
+                              OutlinedButton.icon(
+                                onPressed: _showEditProfileDialog,
+                                icon: const Icon(Icons.edit_outlined, size: 14),
+                                label: const Text('Edit Profile',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF2563EB),
+                                  backgroundColor: const Color(0xFFEFF6FF),
+                                  side: const BorderSide(
+                                      color: Color(0xFFBFDBFE)),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 8),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -484,44 +378,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.email_outlined, size: 13, color: Colors.grey),
-                                const SizedBox(width: 4),
-                                Text(_email, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                const SizedBox(width: 8),
-                                const Text('·', style: TextStyle(color: Colors.grey)),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.phone_outlined, size: 13, color: Colors.grey),
-                                const SizedBox(width: 4),
-                                Text(_phone, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                              ],
+                            Text(
+                              name.isEmpty ? 'Guest shopper' : name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
-                            const SizedBox(height: 10),
-                            const Divider(height: 1),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.location_on, size: 14, color: Color(0xFF2563EB)),
-                                    const SizedBox(width: 4),
-                                    Text(_area, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-                                  ],
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFECFDF5),
-                                    borderRadius: BorderRadius.circular(8),
+                            if (email.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.email_outlined,
+                                    size: 13,
+                                    color: Colors.grey,
                                   ),
-                                  child: const Text('Verified Local Shopper', style: TextStyle(color: Color(0xFF059669), fontSize: 10, fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    email,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -533,11 +416,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
 
+          if (user == null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color:
+                      isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Get more from ShopGenie',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Sign in or create an account to save your activity across devices.',
+                    style: TextStyle(
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: widget.onLogin,
+                          child: const Text('Sign In'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: widget.onRegister,
+                          child: const Text('Create Account'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           const Padding(
             padding: EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'APPEARANCE',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.8),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                  letterSpacing: 0.8),
             ),
           ),
           Container(
@@ -545,7 +483,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+              border: Border.all(
+                  color:
+                      isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,11 +496,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceVariant : const Color(0xFFEFF6FF),
+                        color: isDark
+                            ? AppColors.darkSurfaceVariant
+                            : const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                        isDark
+                            ? Icons.dark_mode_rounded
+                            : Icons.light_mode_rounded,
                         color: const Color(0xFF2563EB),
                         size: 20,
                       ),
@@ -570,9 +514,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Appearance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text('Appearance',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 13)),
                           SizedBox(height: 2),
-                          Text('Choose white or dark mode', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                          Text('Choose white or dark mode',
+                              style:
+                                  TextStyle(fontSize: 11, color: Colors.grey)),
                         ],
                       ),
                     ),
@@ -616,7 +564,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'ACCOUNT & ACTIVITY',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.8),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                  letterSpacing: 0.8),
             ),
           ),
           Container(
@@ -624,7 +576,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+              border: Border.all(
+                  color:
+                      isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
             ),
             child: Column(
               children: [
@@ -634,7 +588,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   iconColor: const Color(0xFF2563EB),
                   title: 'My Orders',
                   subtitle: 'View your purchases and order history',
-                  badge: '2',
                   onTap: _showOrdersDialog,
                 ),
                 const Divider(height: 1, indent: 64),
@@ -644,7 +597,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   iconColor: const Color(0xFFE11D48),
                   title: 'Saved Products',
                   subtitle: 'Products you saved from local shops',
-                  badge: '3',
                   onTap: _showSavedProductsDialog,
                 ),
                 const Divider(height: 1, indent: 64),
@@ -654,7 +606,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   iconColor: const Color(0xFF059669),
                   title: 'My Shops / Followed Shops',
                   subtitle: 'Manage shops you follow',
-                  badge: '2',
                   onTap: _showFollowedShopsDialog,
                 ),
                 const Divider(height: 1, indent: 64),
@@ -696,7 +647,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               'SUPPORT & INFORMATION',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.8),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                  letterSpacing: 0.8),
             ),
           ),
           Container(
@@ -704,7 +659,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
+              border: Border.all(
+                  color:
+                      isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
             ),
             child: Column(
               children: [
@@ -760,22 +717,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // =========================================================
           // 5. BOTTOM SECTION
           // =========================================================
-          OutlinedButton.icon(
-            icon: const Icon(Icons.logout, size: 18),
-            label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.redAccent,
-              side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          if (user != null)
+            OutlinedButton.icon(
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Sign Out',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
+              ),
+              onPressed: _showLogoutDialog,
             ),
-            onPressed: _showLogoutDialog,
-          ),
           const SizedBox(height: 14),
 
           const Center(
             child: Text(
-              'Member since October 2024',
+              'ShopGenie customer account',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
@@ -813,8 +773,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: Icon(icon, color: iconColor, size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      title: Text(title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+      subtitle: Text(subtitle,
+          style: const TextStyle(fontSize: 11, color: Colors.grey)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -827,7 +789,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Text(
                 badge,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: iconColor),
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: iconColor),
               ),
             ),
             const SizedBox(width: 6),

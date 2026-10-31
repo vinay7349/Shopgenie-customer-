@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run ShopGenie Flutter app",
+			"type": "shell",
+			"command": "flutter",
+			"args": ["run"],
+			"options": {
+				"cwd": "${workspaceFolder}\\flutter_shopgenie"
+			},
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

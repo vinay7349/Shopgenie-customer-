@@ -15,11 +15,17 @@ import 'search_screen.dart';
 class MainNavigationScreen extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final VoidCallback onLogin;
+  final VoidCallback onRegister;
+  final VoidCallback? onLogout;
 
   const MainNavigationScreen({
     super.key,
     required this.themeMode,
     required this.onThemeModeChanged,
+    required this.onLogin,
+    required this.onRegister,
+    this.onLogout,
   });
 
   @override
@@ -29,49 +35,13 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   UserRole _userRole = UserRole.shopper;
   int _currentTab = 0; // 0: Home, 1: Map, 2: AI Scan, 3: Search, 4: Smart Bag
-  String _currentLocation = 'Rajarajeshwari Nagar, Bengaluru';
+  String _currentLocation = 'Location unavailable';
   StoreItem? _selectedStore;
-  int? _activeFeedTab; // null if not in feed, 0: Feed, 1: Offers, 2: Following
+  int? _activeFeedTab; // null if not in feed, 0: Feed, 1: Offers
+  int? _feedTabBeforeShop;
   bool _isProfileOpen = false;
 
-  final List<SmartBagItem> _cartItems = [
-    SmartBagItem(
-      id: '101',
-      storeId: '1',
-      name: 'Coca-Cola 500ml',
-      brand: 'Coca-Cola',
-      category: 'Beverages',
-      size: '500 ml',
-      price: 40.0,
-      emoji: '🥤',
-      confidence: 0.96,
-      quantity: 1,
-    ),
-    SmartBagItem(
-      id: '102',
-      storeId: '1',
-      name: "Lay's Classic",
-      brand: "Lay's",
-      category: 'Snacks',
-      size: '50 g',
-      price: 20.0,
-      emoji: '🥔',
-      confidence: 0.98,
-      quantity: 1,
-    ),
-    SmartBagItem(
-      id: '103',
-      storeId: '1',
-      name: 'Amul Milk 1L',
-      brand: 'Amul',
-      category: 'Dairy',
-      size: '1 L',
-      price: 65.0,
-      emoji: '🥛',
-      confidence: 0.94,
-      quantity: 1,
-    ),
-  ];
+  final List<SmartBagItem> _cartItems = [];
 
   int get _cartCount => _cartItems.fold(0, (sum, i) => sum + i.quantity);
 
@@ -108,20 +78,65 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
+  bool get _hasInternalBackState =>
+      _selectedStore != null ||
+      _isProfileOpen ||
+      _activeFeedTab != null ||
+      _currentTab != 0;
+
+  void _handleBack() {
+    if (_selectedStore != null) {
+      setState(() {
+        _selectedStore = null;
+        if (_feedTabBeforeShop != null) {
+          _activeFeedTab = _feedTabBeforeShop;
+          _feedTabBeforeShop = null;
+        }
+      });
+      return;
+    }
+
+    if (_isProfileOpen) {
+      setState(() => _isProfileOpen = false);
+      return;
+    }
+
+    if (_activeFeedTab != null) {
+      setState(() => _activeFeedTab = null);
+      return;
+    }
+
+    if (_currentTab != 0) {
+      setState(() => _currentTab = 0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 1. Shopper Sub-screens overlay (Shop Detail, Feed/Offers/Following, Profile)
+    return PopScope(
+      canPop: !_hasInternalBackState,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _hasInternalBackState) {
+          _handleBack();
+        }
+      },
+      child: _buildScreen(context),
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
+    // 1. Shopper sub-screens overlay (shop detail, feed/offers, profile)
     if (_selectedStore != null) {
       return ShopDetailScreen(
         store: _selectedStore!,
         onBack: () {
-          setState(() {
-            _selectedStore = null;
-          });
+          _handleBack();
         },
         onStartScan: () {
           setState(() {
             _selectedStore = null;
+            _feedTabBeforeShop = null;
+            _activeFeedTab = null;
             _currentTab = 2; // switch to AI Scan
           });
         },
@@ -135,12 +150,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       return Scaffold(
         body: FeedScreen(
           initialTabIndex: _activeFeedTab!,
-          onSelectStore: (store) {
-            setState(() {
-              _activeFeedTab = null;
-              _selectedStore = store;
-            });
-          },
         ),
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: _currentTab,
@@ -148,6 +157,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           onTabSelected: (tab) {
             setState(() {
               _activeFeedTab = null;
+              _feedTabBeforeShop = null;
               _currentTab = tab;
             });
           },
@@ -160,6 +170,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         userRole: _userRole,
         themeMode: widget.themeMode,
         onThemeModeChanged: widget.onThemeModeChanged,
+        onLogin: widget.onLogin,
+        onRegister: widget.onRegister,
+        onLogout: widget.onLogout,
         onRoleChanged: (role) {
           setState(() {
             _userRole = role;
@@ -212,17 +225,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
           onOpenFeed: () {
             setState(() {
+              _feedTabBeforeShop = null;
               _activeFeedTab = 0;
             });
           },
           onOpenOffers: () {
             setState(() {
+              _feedTabBeforeShop = null;
               _activeFeedTab = 1;
-            });
-          },
-          onOpenFollowing: () {
-            setState(() {
-              _activeFeedTab = 2;
             });
           },
           onOpenProfile: () {
@@ -300,6 +310,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           setState(() {
             _selectedStore = null;
             _activeFeedTab = null;
+            _feedTabBeforeShop = null;
             _isProfileOpen = false;
             _currentTab = tab;
           });

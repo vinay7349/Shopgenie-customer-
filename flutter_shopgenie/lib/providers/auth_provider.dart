@@ -51,24 +51,65 @@ class AuthProvider extends ChangeNotifier {
 
   /// Initializes the authentication state by checking for stored tokens.
   ///
-  /// Since there is no current-user endpoint on the backend to validate
-  /// existing tokens, this method only checks if tokens exist locally.
-  /// Actual token validity will be determined when making authenticated
-  /// requests (which may return 401 and require re-login).
+  /// Validates stored sessions against the backend, refreshing expired access
+  /// tokens when possible. A temporary network failure keeps the stored
+  /// session available for retry on the next authenticated request.
   Future<void> initialize() async {
     _setState(AuthState.loading);
     try {
-      final hasTokens = await _tokenStorage.hasTokens();
-      if (hasTokens) {
-        // Tokens exist but we cannot validate them without a current-user endpoint.
-        // Mark as authenticated; actual validity will be checked on first API call.
-        _setState(AuthState.authenticated);
-      } else {
+      final accessToken = await _tokenStorage.getAccessToken();
+      if (accessToken == null || accessToken.isEmpty) {
         _setState(AuthState.unauthenticated);
+        return;
       }
-    } catch (e) {
-      // If token storage is unavailable, treat as unauthenticated.
-      _setState(AuthState.unauthenticated);
+      try {
+        _user = await _apiService.fetchCurrentUser(accessToken);
+      } on AuthApiException catch (error) {
+        if (error.isNetworkError) {
+          _setState(AuthState.authenticated);
+          return;
+        }
+        if (error.statusCode != 401) {
+          _setState(AuthState.authenticated);
+          return;
+        }
+        final refreshToken = await _tokenStorage.getRefreshToken();
+        if (refreshToken == null || refreshToken.isEmpty) {
+          await _tokenStorage.clearTokens();
+          _setState(AuthState.unauthenticated);
+          return;
+        }
+        try {
+          final refreshed = await _apiService.refreshToken(refreshToken);
+          await _tokenStorage.saveTokens(
+            accessToken: refreshed.access,
+            refreshToken: refreshed.refresh,
+          );
+          _user = await _apiService.fetchCurrentUser(refreshed.access);
+        } on AuthApiException catch (refreshError) {
+          if (refreshError.isNetworkError) {
+            _setState(AuthState.authenticated);
+            return;
+          }
+          if (refreshError.statusCode == 401) {
+            await _tokenStorage.clearTokens();
+            _setState(AuthState.unauthenticated);
+            return;
+          }
+          _setState(AuthState.authenticated);
+          return;
+        }
+      }
+      if (_user?.role.toUpperCase() != 'CUSTOMER') {
+        await _tokenStorage.clearTokens();
+        _user = null;
+        _setState(AuthState.unauthenticated);
+        return;
+      }
+      _setState(AuthState.authenticated);
+    } catch (error) {
+      _setError('Unable to restore the saved session: $error');
+      _setState(AuthState.error);
     }
   }
 
@@ -87,6 +128,11 @@ class AuthProvider extends ChangeNotifier {
         username: usernameOrEmail,
         password: password,
       );
+      if (response.user.role.toUpperCase() != 'CUSTOMER') {
+        throw AuthApiException(
+          'This account is not a customer account. Use the Shop Owner app for shop access.',
+        );
+      }
 
       await _tokenStorage.saveTokens(
         accessToken: response.tokens.access,
@@ -125,6 +171,11 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
       );
+      if (response.user.role.toUpperCase() != 'CUSTOMER') {
+        throw AuthApiException(
+          'Customer registration returned an unexpected account role.',
+        );
+      }
 
       await _tokenStorage.saveTokens(
         accessToken: response.tokens.access,

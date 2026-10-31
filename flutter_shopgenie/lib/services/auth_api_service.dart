@@ -1,3 +1,4 @@
+import 'dart:async' show TimeoutException;
 import 'dart:convert';
 import 'dart:io' show SocketException, HttpException;
 
@@ -119,13 +120,31 @@ class AuthApiService {
 
     final uri = Uri.parse(ApiConfig.fullUrl(ApiConfig.authRefreshEndpoint));
 
-    final response = await _client
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'refresh': refreshToken}),
-        )
-        .timeout(_timeout);
+    late final http.Response response;
+    try {
+      response = await _client
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refresh': refreshToken}),
+          )
+          .timeout(_timeout);
+    } on SocketException {
+      throw AuthApiException(
+        'The ShopGenie backend is unreachable.',
+        isNetworkError: true,
+      );
+    } on HttpException catch (error) {
+      throw AuthApiException(
+        'HTTP communication failed: ${error.message}',
+        isNetworkError: true,
+      );
+    } on TimeoutException {
+      throw AuthApiException(
+        'The ShopGenie backend did not respond within 15 seconds.',
+        isNetworkError: true,
+      );
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       if (response.statusCode == 401) {
@@ -152,6 +171,57 @@ class AuthApiService {
     }
 
     return AuthTokens.fromJson(decoded);
+  }
+
+  Future<AuthUser> fetchCurrentUser(String accessToken) async {
+    late final http.Response response;
+    try {
+      response = await _client
+          .get(
+            Uri.parse(ApiConfig.fullUrl('/auth/me/')),
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $accessToken',
+            },
+          )
+          .timeout(_timeout);
+    } on SocketException {
+      throw AuthApiException(
+        'The ShopGenie backend is unreachable.',
+        isNetworkError: true,
+      );
+    } on HttpException catch (error) {
+      throw AuthApiException(
+        'HTTP communication failed: ${error.message}',
+        isNetworkError: true,
+      );
+    } on TimeoutException {
+      throw AuthApiException(
+        'The ShopGenie backend did not respond within 15 seconds.',
+        isNetworkError: true,
+      );
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AuthApiException(
+        'Failed to validate the saved session (HTTP ${response.statusCode}).',
+        statusCode: response.statusCode,
+      );
+    }
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw AuthApiException(
+        'Invalid current-user response: could not parse JSON.',
+      );
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw AuthApiException(
+        'Invalid current-user response: expected JSON object.',
+      );
+    }
+    return AuthUser.fromJson(decoded);
   }
 
   /// Handles successful and error responses from auth endpoints.
