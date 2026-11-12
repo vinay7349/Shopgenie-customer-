@@ -39,6 +39,6 @@ flutter run
 - Never send plain-text credentials in logs or non-auth endpoints.
 
 ## 6. Prohibited & Deferred Features
-- **Maps:** DEFERRED. Keep existing code intact without modifying or inventing coordinates.
+- **Maps:** Use OpenStreetMap tiles via `flutter_map`. Show markers only for valid coordinates saved on real shop records; never invent coordinates or geocode addresses.
 - **AI Scanning:** DEFERRED. Keep overlay simulation without fabricating production recognition results.
 - **Online Checkout:** Prohibited. No third-party payment gateways unless explicitly requested.

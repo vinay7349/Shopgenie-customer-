@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_colors.dart';
+import '../widgets/hcaptcha_widget.dart';
 
 enum RegisterMode { customer, owner }
 
@@ -28,9 +29,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _shopNameController = TextEditingController();
+  final _verificationCodeController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  bool _verificationPending = false;
+  bool _emailVerified = false;
+  bool _showCaptcha = false;
+  String? _captchaToken;
+  String? _captchaError;
+  int _captchaGeneration = 0;
 
   @override
   void dispose() {
@@ -39,11 +47,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _shopNameController.dispose();
+    _verificationCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_captchaToken == null) {
+      setState(() => _showCaptcha = true);
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -55,22 +68,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        passwordConfirm: _confirmPasswordController.text,
+        captchaToken: _captchaToken!,
       );
     } else {
       success = await authProvider.registerOwner(
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        passwordConfirm: _confirmPasswordController.text,
         shopName: _shopNameController.text.trim(),
+        captchaToken: _captchaToken!,
       );
     }
 
     if (mounted) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _captchaToken = null;
+        _showCaptcha = false;
+        _captchaError = null;
+        _captchaGeneration += 1;
+        _verificationPending = success;
+      });
       if (success) {
-        widget.onRegisterSuccess();
+        context.read<AuthProvider>().clearError();
       }
     }
+  }
+
+  Future<void> _verifyEmail() async {
+    setState(() => _isLoading = true);
+    final success = await context.read<AuthProvider>().verifyEmail(
+          email: _emailController.text.trim(),
+          code: _verificationCodeController.text.trim(),
+        );
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _emailVerified = success;
+    });
+  }
+
+  Future<void> _resendVerification() async {
+    if (_captchaToken == null) {
+      setState(() => _showCaptcha = true);
+      return;
+    }
+    setState(() => _isLoading = true);
+    await context.read<AuthProvider>().resendVerification(
+          email: _emailController.text.trim(),
+          captchaToken: _captchaToken!,
+        );
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _captchaToken = null;
+      _showCaptcha = false;
+      _captchaGeneration += 1;
+    });
   }
 
   @override
@@ -247,8 +303,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter a password';
                           }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
+                          if (value.length < 10) {
+                            return 'Password must be at least 10 characters';
                           }
                           return null;
                         },
@@ -292,38 +348,119 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Register Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleRegister,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.genieTeal,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
+                      if (!_verificationPending && !_emailVerified) ...[
+                        if (_showCaptcha) ...[
+                          HCaptchaWidget(
+                            key: ValueKey(_captchaGeneration),
+                            onToken: (token) => setState(() {
+                              _captchaToken = token;
+                              _showCaptcha = false;
+                              _captchaError = null;
+                            }),
+                            onError: (message) => setState(() {
+                              _captchaToken = null;
+                              _showCaptcha = false;
+                              _captchaError = message;
+                              _captchaGeneration += 1;
+                            }),
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          const SizedBox(height: 12),
+                        ],
+                        if (_captchaError != null)
+                          Text(
+                          _captchaError!,
+                          style: const TextStyle(color: Colors.red),
+                          ),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleRegister,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.genieTeal,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(
+                                    isOwner ? 'Create Shop' : 'Create Account',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                )
-                              : Text(
-                                  isOwner ? 'Create Shop' : 'Create Account',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                          ),
                         ),
-                      ),
+                      ],
+                      if (_verificationPending && !_emailVerified) ...[
+                        const Text(
+                          'If registration can be completed, check your inbox for a verification code.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _verificationCodeController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          decoration: const InputDecoration(
+                            labelText: 'Email verification code',
+                            prefixIcon: Icon(Icons.verified_user_outlined),
+                          ),
+                        ),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _verifyEmail,
+                            child: const Text('Verify email'),
+                          ),
+                        ),
+                        if (_showCaptcha) ...[
+                          HCaptchaWidget(
+                            key: ValueKey(_captchaGeneration),
+                            onToken: (token) => setState(() {
+                              _captchaToken = token;
+                              _showCaptcha = false;
+                              _captchaError = null;
+                            }),
+                            onError: (message) => setState(() {
+                              _captchaToken = null;
+                              _showCaptcha = false;
+                              _captchaError = message;
+                              _captchaGeneration += 1;
+                            }),
+                          ),
+                        ],
+                        if (_captchaError != null)
+                          Text(
+                            _captchaError!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        TextButton(
+                          onPressed: _isLoading ? null : _resendVerification,
+                          child: const Text('Resend code'),
+                        ),
+                      ],
+                      if (_emailVerified) ...[
+                        const Text(
+                          'Email verified. Sign in to continue.',
+                          textAlign: TextAlign.center,
+                        ),
+                        TextButton(
+                          onPressed: widget.onGoToLogin,
+                          child: const Text('Go to sign in'),
+                        ),
+                      ],
                     ],
                   ),
                 ),

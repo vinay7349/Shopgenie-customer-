@@ -47,6 +47,16 @@ class _FakeAuthTokens_1 extends _i1.SmartFake implements _i2.AuthTokens {
         );
 }
 
+class _FakeAuthUser_2 extends _i1.SmartFake implements _i2.AuthUser {
+  _FakeAuthUser_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [AuthApiService].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -56,10 +66,12 @@ class MockAuthApiService extends _i1.Mock implements _i3.AuthApiService {
   }
 
   @override
-  _i4.Future<_i2.AuthResponse> registerCustomer({
+  _i4.Future<void> registerCustomer({
     required String? username,
     required String? email,
     required String? password,
+    required String? passwordConfirm,
+    required String? captchaToken,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -69,28 +81,22 @@ class MockAuthApiService extends _i1.Mock implements _i3.AuthApiService {
             #username: username,
             #email: email,
             #password: password,
+            #passwordConfirm: passwordConfirm,
+            #captchaToken: captchaToken,
           },
         ),
-        returnValue: _i4.Future<_i2.AuthResponse>.value(_FakeAuthResponse_0(
-          this,
-          Invocation.method(
-            #registerCustomer,
-            [],
-            {
-              #username: username,
-              #email: email,
-              #password: password,
-            },
-          ),
-        )),
-      ) as _i4.Future<_i2.AuthResponse>);
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<_i2.AuthResponse> registerOwner({
+  _i4.Future<void> registerOwner({
     required String? username,
     required String? email,
     required String? password,
+    required String? passwordConfirm,
     required String? shopName,
+    required String? captchaToken,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -100,28 +106,20 @@ class MockAuthApiService extends _i1.Mock implements _i3.AuthApiService {
             #username: username,
             #email: email,
             #password: password,
+            #passwordConfirm: passwordConfirm,
             #shopName: shopName,
+            #captchaToken: captchaToken,
           },
         ),
-        returnValue: _i4.Future<_i2.AuthResponse>.value(_FakeAuthResponse_0(
-          this,
-          Invocation.method(
-            #registerOwner,
-            [],
-            {
-              #username: username,
-              #email: email,
-              #password: password,
-              #shopName: shopName,
-            },
-          ),
-        )),
-      ) as _i4.Future<_i2.AuthResponse>);
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<_i2.AuthResponse> login({
     required String? username,
     required String? password,
+    required String? role,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -130,6 +128,7 @@ class MockAuthApiService extends _i1.Mock implements _i3.AuthApiService {
           {
             #username: username,
             #password: password,
+            #role: role,
           },
         ),
         returnValue: _i4.Future<_i2.AuthResponse>.value(_FakeAuthResponse_0(
@@ -140,10 +139,47 @@ class MockAuthApiService extends _i1.Mock implements _i3.AuthApiService {
             {
               #username: username,
               #password: password,
+              #role: role,
             },
           ),
         )),
       ) as _i4.Future<_i2.AuthResponse>);
+
+  @override
+  _i4.Future<void> verifyEmail({
+    required String? email,
+    required String? code,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #verifyEmail,
+          [],
+          {
+            #email: email,
+            #code: code,
+          },
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> resendVerification({
+    required String? email,
+    required String? captchaToken,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #resendVerification,
+          [],
+          {
+            #email: email,
+            #captchaToken: captchaToken,
+          },
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<_i2.AuthTokens> refreshToken(String? refreshToken) =>
@@ -160,6 +196,22 @@ class MockAuthApiService extends _i1.Mock implements _i3.AuthApiService {
           ),
         )),
       ) as _i4.Future<_i2.AuthTokens>);
+
+  @override
+  _i4.Future<_i2.AuthUser> fetchCurrentUser(String? accessToken) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetchCurrentUser,
+          [accessToken],
+        ),
+        returnValue: _i4.Future<_i2.AuthUser>.value(_FakeAuthUser_2(
+          this,
+          Invocation.method(
+            #fetchCurrentUser,
+            [accessToken],
+          ),
+        )),
+      ) as _i4.Future<_i2.AuthUser>);
 
   @override
   void close() => super.noSuchMethod(

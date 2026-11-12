@@ -127,6 +127,7 @@ class AuthProvider extends ChangeNotifier {
       final response = await _apiService.login(
         username: usernameOrEmail,
         password: password,
+        role: 'CUSTOMER',
       );
       if (response.user.role.toUpperCase() != 'CUSTOMER') {
         throw AuthApiException(
@@ -159,6 +160,8 @@ class AuthProvider extends ChangeNotifier {
     required String username,
     required String email,
     required String password,
+    required String passwordConfirm,
+    required String captchaToken,
   }) async {
     if (_isOperationInProgress) return false;
 
@@ -166,23 +169,14 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.registerCustomer(
+      await _apiService.registerCustomer(
         username: username,
         email: email,
         password: password,
+        passwordConfirm: passwordConfirm,
+        captchaToken: captchaToken,
       );
-      if (response.user.role.toUpperCase() != 'CUSTOMER') {
-        throw AuthApiException(
-          'Customer registration returned an unexpected account role.',
-        );
-      }
-
-      await _tokenStorage.saveTokens(
-        accessToken: response.tokens.access,
-        refreshToken: response.tokens.refresh,
-      );
-      _user = response.user;
-      _setState(AuthState.authenticated);
+      _setState(AuthState.unauthenticated);
       return true;
     } on AuthApiException catch (e) {
       _setError(e.message);
@@ -202,7 +196,9 @@ class AuthProvider extends ChangeNotifier {
     required String username,
     required String email,
     required String password,
+    required String passwordConfirm,
     required String shopName,
+    required String captchaToken,
   }) async {
     if (_isOperationInProgress) return false;
 
@@ -210,19 +206,16 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _apiService.registerOwner(
+      await _apiService.registerOwner(
         username: username,
         email: email,
         password: password,
+        passwordConfirm: passwordConfirm,
         shopName: shopName,
+        captchaToken: captchaToken,
       );
 
-      await _tokenStorage.saveTokens(
-        accessToken: response.tokens.access,
-        refreshToken: response.tokens.refresh,
-      );
-      _user = response.user;
-      _setState(AuthState.authenticated);
+      _setState(AuthState.unauthenticated);
       return true;
     } on AuthApiException catch (e) {
       _setError(e.message);
@@ -231,6 +224,52 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _setError('Owner registration failed: ${e.toString()}');
       _setState(AuthState.error);
+      return false;
+    } finally {
+      _setOperationInProgress(false);
+    }
+  }
+
+  Future<bool> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    if (_isOperationInProgress) return false;
+    _setOperationInProgress(true);
+    _clearError();
+    try {
+      await _apiService.verifyEmail(email: email, code: code);
+      return true;
+    } on AuthApiException catch (error) {
+      _setError(error.message);
+      return false;
+    } catch (error) {
+      _setError('Email verification could not be completed: $error');
+      return false;
+    }
+    finally {
+      _setOperationInProgress(false);
+    }
+  }
+
+  Future<bool> resendVerification({
+    required String email,
+    required String captchaToken,
+  }) async {
+    if (_isOperationInProgress) return false;
+    _setOperationInProgress(true);
+    _clearError();
+    try {
+      await _apiService.resendVerification(
+        email: email,
+        captchaToken: captchaToken,
+      );
+      return true;
+    } on AuthApiException catch (error) {
+      _setError(error.message);
+      return false;
+    } catch (error) {
+      _setError('The request could not be completed: $error');
       return false;
     } finally {
       _setOperationInProgress(false);

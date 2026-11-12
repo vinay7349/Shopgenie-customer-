@@ -83,7 +83,8 @@ void main() {
       });
 
       test('sets unauthenticated when hasTokens throws', () async {
-        when(mockTokenStorage.hasTokens()).thenThrow(Exception('Storage unavailable'));
+        when(mockTokenStorage.hasTokens())
+            .thenThrow(Exception('Storage unavailable'));
 
         await authProvider.initialize();
 
@@ -118,10 +119,13 @@ void main() {
         );
         when(mockApiService.login(username: username, password: password))
             .thenAnswer((_) async => response);
-        when(mockTokenStorage.saveTokens(accessToken: anyNamed('accessToken'), refreshToken: anyNamed('refreshToken')))
+        when(mockTokenStorage.saveTokens(
+                accessToken: anyNamed('accessToken'),
+                refreshToken: anyNamed('refreshToken')))
             .thenAnswer((_) async => Future.value());
 
-        final result = await authProvider.login(usernameOrEmail: username, password: password);
+        final result = await authProvider.login(
+            usernameOrEmail: username, password: password);
 
         expect(result, isTrue);
         expect(authProvider.state, AuthState.authenticated);
@@ -136,9 +140,11 @@ void main() {
 
       test('returns false and sets error on AuthApiException', () async {
         when(mockApiService.login(username: username, password: password))
-            .thenThrow(AuthApiException('Invalid credentials', statusCode: 400));
+            .thenThrow(
+                AuthApiException('Invalid credentials', statusCode: 400));
 
-        final result = await authProvider.login(usernameOrEmail: username, password: password);
+        final result = await authProvider.login(
+            usernameOrEmail: username, password: password);
 
         expect(result, isFalse);
         expect(authProvider.state, AuthState.error);
@@ -154,55 +160,61 @@ void main() {
         when(mockApiService.login(username: username, password: password))
             .thenThrow(Exception('Network error'));
 
-        final result = await authProvider.login(usernameOrEmail: username, password: password);
+        final result = await authProvider.login(
+            usernameOrEmail: username, password: password);
 
         expect(result, isFalse);
         expect(authProvider.state, AuthState.error);
         expect(authProvider.errorMessage, contains('Login failed'));
       });
 
-test('shows operation in progress during login', () async {
-      final completer = Completer<AuthResponse>();
-      when(mockApiService.login(username: username, password: password))
-          .thenAnswer((_) => completer.future);
+      test('shows operation in progress during login', () async {
+        final completer = Completer<AuthResponse>();
+        when(mockApiService.login(username: username, password: password))
+            .thenAnswer((_) => completer.future);
 
-      final loginFuture = authProvider.login(usernameOrEmail: username, password: password);
+        final loginFuture =
+            authProvider.login(usernameOrEmail: username, password: password);
 
-      // Give time for the state to update
-      await Future.delayed(Duration.zero);
+        // Give time for the state to update
+        await Future.delayed(Duration.zero);
 
-      expect(authProvider.isOperationInProgress, isTrue);
+        expect(authProvider.isOperationInProgress, isTrue);
 
-      completer.complete(createAuthResponse());
-      await loginFuture;
+        completer.complete(createAuthResponse());
+        await loginFuture;
 
-      expect(authProvider.isOperationInProgress, isFalse);
-    });
+        expect(authProvider.isOperationInProgress, isFalse);
+      });
 
-    test('prevents duplicate submission', () async {
-      final completer = Completer<AuthResponse>();
-      when(mockApiService.login(username: username, password: password))
-          .thenAnswer((_) => completer.future);
+      test('prevents duplicate submission', () async {
+        final completer = Completer<AuthResponse>();
+        when(mockApiService.login(username: username, password: password))
+            .thenAnswer((_) => completer.future);
 
-      // Start first call, don't await it yet
-      final firstCall = authProvider.login(usernameOrEmail: username, password: password);
-      
-      // Immediately try second call while first is in progress
-      final secondCall = authProvider.login(usernameOrEmail: username, password: password);
+        // Start first call, don't await it yet
+        final firstCall =
+            authProvider.login(usernameOrEmail: username, password: password);
 
-      // Second call should be rejected immediately (returns false)
-      final secondResult = await secondCall;
-      expect(secondResult, isFalse);
+        // Immediately try second call while first is in progress
+        final secondCall =
+            authProvider.login(usernameOrEmail: username, password: password);
 
-      // Now complete the first call
-      completer.complete(createAuthResponse());
-      await firstCall;
-    });
+        // Second call should be rejected immediately (returns false)
+        final secondResult = await secondCall;
+        expect(secondResult, isFalse);
+
+        // Now complete the first call
+        completer.complete(createAuthResponse());
+        await firstCall;
+      });
 
       test('resets loading state after success', () async {
         when(mockApiService.login(username: username, password: password))
             .thenAnswer((_) async => createAuthResponse());
-        when(mockTokenStorage.saveTokens(accessToken: anyNamed('accessToken'), refreshToken: anyNamed('refreshToken')))
+        when(mockTokenStorage.saveTokens(
+                accessToken: anyNamed('accessToken'),
+                refreshToken: anyNamed('refreshToken')))
             .thenAnswer((_) async => Future.value());
 
         await authProvider.login(usernameOrEmail: username, password: password);
@@ -226,37 +238,53 @@ test('shows operation in progress during login', () async {
       const username = 'newcustomer';
       const email = 'new@example.com';
       const password = 'SecurePass123';
+      const passwordConfirm = password;
+      const captchaToken = 'test-captcha-token';
 
-      test('returns true and sets authenticated on success', () async {
-        final response = createAuthResponse(
+      test(
+          'returns true and remains unauthenticated pending email verification',
+          () async {
+        when(mockApiService.registerCustomer(
           username: username,
           email: email,
-          role: 'CUSTOMER',
-        );
-        when(mockApiService.registerCustomer(username: username, email: email, password: password))
-            .thenAnswer((_) async => response);
-        when(mockTokenStorage.saveTokens(accessToken: anyNamed('accessToken'), refreshToken: anyNamed('refreshToken')))
-            .thenAnswer((_) async => Future.value());
+          password: password,
+          passwordConfirm: passwordConfirm,
+          captchaToken: captchaToken,
+        )).thenAnswer((_) async {});
 
         final result = await authProvider.registerCustomer(
           username: username,
           email: email,
           password: password,
+          passwordConfirm: passwordConfirm,
+          captchaToken: captchaToken,
         );
 
         expect(result, isTrue);
-        expect(authProvider.state, AuthState.authenticated);
-        expect(authProvider.user!.role, 'CUSTOMER');
+        expect(authProvider.state, AuthState.unauthenticated);
+        expect(authProvider.user, isNull);
+        verifyNever(mockTokenStorage.saveTokens(
+          accessToken: anyNamed('accessToken'),
+          refreshToken: anyNamed('refreshToken'),
+        ));
       });
 
       test('returns false and does not save tokens on failure', () async {
-        when(mockApiService.registerCustomer(username: username, email: email, password: password))
-            .thenThrow(AuthApiException('Email already registered', statusCode: 400));
+        when(mockApiService.registerCustomer(
+          username: username,
+          email: email,
+          password: password,
+          passwordConfirm: passwordConfirm,
+          captchaToken: captchaToken,
+        )).thenThrow(AuthApiException('Registration could not be completed.',
+            statusCode: 400));
 
         final result = await authProvider.registerCustomer(
           username: username,
           email: email,
           password: password,
+          passwordConfirm: passwordConfirm,
+          captchaToken: captchaToken,
         );
 
         expect(result, isFalse);
@@ -268,20 +296,37 @@ test('shows operation in progress during login', () async {
         ));
       });
 
-test('prevents duplicate submission', () async {
-      final completer = Completer<AuthResponse>();
-      when(mockApiService.registerCustomer(username: username, email: email, password: password))
-          .thenAnswer((_) => completer.future);
+      test('prevents duplicate submission', () async {
+        final completer = Completer<void>();
+        when(mockApiService.registerCustomer(
+          username: username,
+          email: email,
+          password: password,
+          passwordConfirm: passwordConfirm,
+          captchaToken: captchaToken,
+        )).thenAnswer((_) => completer.future);
 
-      final firstCall = authProvider.registerCustomer(username: username, email: email, password: password);
-      final secondCall = authProvider.registerCustomer(username: username, email: email, password: password);
+        final firstCall = authProvider.registerCustomer(
+          username: username,
+          email: email,
+          password: password,
+          passwordConfirm: passwordConfirm,
+          captchaToken: captchaToken,
+        );
+        final secondCall = authProvider.registerCustomer(
+          username: username,
+          email: email,
+          password: password,
+          passwordConfirm: passwordConfirm,
+          captchaToken: captchaToken,
+        );
 
-      final secondResult = await secondCall;
-      expect(secondResult, isFalse);
+        final secondResult = await secondCall;
+        expect(secondResult, isFalse);
 
-      completer.complete(createAuthResponse(role: 'CUSTOMER'));
-      await firstCall;
-    });
+        completer.complete();
+        await firstCall;
+      });
     });
 
     group('registerOwner()', () {
@@ -289,32 +334,37 @@ test('prevents duplicate submission', () async {
       const email = 'owner@example.com';
       const password = 'SecurePass123';
       const shopName = 'My New Shop';
+      const passwordConfirm = password;
+      const captchaToken = 'test-captcha-token';
 
-      test('returns true and sets authenticated on success', () async {
-        final response = createAuthResponse(
-          username: username,
-          email: email,
-          role: 'SHOP_OWNER',
-        );
+      test(
+          'returns true and remains unauthenticated pending email verification',
+          () async {
         when(mockApiService.registerOwner(
           username: username,
           email: email,
           password: password,
+          passwordConfirm: passwordConfirm,
           shopName: shopName,
-        )).thenAnswer((_) async => response);
-        when(mockTokenStorage.saveTokens(accessToken: anyNamed('accessToken'), refreshToken: anyNamed('refreshToken')))
-            .thenAnswer((_) async => Future.value());
+          captchaToken: captchaToken,
+        )).thenAnswer((_) async {});
 
         final result = await authProvider.registerOwner(
           username: username,
           email: email,
           password: password,
+          passwordConfirm: passwordConfirm,
           shopName: shopName,
+          captchaToken: captchaToken,
         );
 
         expect(result, isTrue);
-        expect(authProvider.state, AuthState.authenticated);
-        expect(authProvider.user!.role, 'SHOP_OWNER');
+        expect(authProvider.state, AuthState.unauthenticated);
+        expect(authProvider.user, isNull);
+        verifyNever(mockTokenStorage.saveTokens(
+          accessToken: anyNamed('accessToken'),
+          refreshToken: anyNamed('refreshToken'),
+        ));
       });
 
       test('returns false and does not save tokens on failure', () async {
@@ -322,14 +372,19 @@ test('prevents duplicate submission', () async {
           username: username,
           email: email,
           password: password,
+          passwordConfirm: passwordConfirm,
           shopName: shopName,
-        )).thenThrow(AuthApiException('Username already taken', statusCode: 400));
+          captchaToken: captchaToken,
+        )).thenThrow(AuthApiException('Registration could not be completed.',
+            statusCode: 400));
 
         final result = await authProvider.registerOwner(
           username: username,
           email: email,
           password: password,
+          passwordConfirm: passwordConfirm,
           shopName: shopName,
+          captchaToken: captchaToken,
         );
 
         expect(result, isFalse);
@@ -349,7 +404,8 @@ test('prevents duplicate submission', () async {
 
         expect(authProvider.state, AuthState.authenticated);
 
-        when(mockTokenStorage.clearTokens()).thenAnswer((_) async => Future.value());
+        when(mockTokenStorage.clearTokens())
+            .thenAnswer((_) async => Future.value());
 
         await authProvider.logout();
 
@@ -359,7 +415,8 @@ test('prevents duplicate submission', () async {
       });
 
       test('works even when already unauthenticated', () async {
-        when(mockTokenStorage.clearTokens()).thenAnswer((_) async => Future.value());
+        when(mockTokenStorage.clearTokens())
+            .thenAnswer((_) async => Future.value());
 
         await authProvider.logout();
 
@@ -369,7 +426,8 @@ test('prevents duplicate submission', () async {
 
       test('shows loading during logout', () async {
         final completer = Completer<void>();
-        when(mockTokenStorage.clearTokens()).thenAnswer((_) => completer.future);
+        when(mockTokenStorage.clearTokens())
+            .thenAnswer((_) => completer.future);
 
         final logoutFuture = authProvider.logout();
 
@@ -407,7 +465,9 @@ test('prevents duplicate submission', () async {
 
         when(mockApiService.login(username: 'u', password: 'p'))
             .thenAnswer((_) async => createAuthResponse());
-        when(mockTokenStorage.saveTokens(accessToken: anyNamed('accessToken'), refreshToken: anyNamed('refreshToken')))
+        when(mockTokenStorage.saveTokens(
+                accessToken: anyNamed('accessToken'),
+                refreshToken: anyNamed('refreshToken')))
             .thenAnswer((_) async => Future.value());
 
         await authProvider.login(usernameOrEmail: 'u', password: 'p');
@@ -420,7 +480,8 @@ test('prevents duplicate submission', () async {
         await authProvider.initialize();
         expect(authProvider.state, AuthState.authenticated);
 
-        when(mockTokenStorage.clearTokens()).thenAnswer((_) async => Future.value());
+        when(mockTokenStorage.clearTokens())
+            .thenAnswer((_) async => Future.value());
         await authProvider.logout();
 
         expect(authProvider.state, AuthState.unauthenticated);

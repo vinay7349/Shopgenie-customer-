@@ -17,44 +17,13 @@ Location permission is requested only after the customer opens Nearby Shops
 and accepts the explanation. Customers can deny location access and still
 browse the shop list.
 
-### Configure Google Maps keys
+### OpenStreetMap tiles
 
-1. In Google Cloud Console, enable billing and **Maps SDK for Android**. For an
-   iOS build, also enable **Maps SDK for iOS**. The map uses SDK map loads only;
-   it does not call Places, Geocoding, or Routes APIs. Review current Google
-   Maps Platform pricing, monthly allowances, and billing requirements for your
-   account; usage is not unlimited or permanently free.
-2. Create separate development and production keys. Restrict each Android key
-   to the app's package name `com.shopgenie` and the SHA-1 fingerprint of the
-   applicable signing certificate. Restrict its API access to Maps SDK for
-   Android. Obtain fingerprints with
-   `cd android; .\gradlew signingReport` (PowerShell).
-3. Keep the keys out of source control. For local Android builds, add these
-   properties to `android/local.properties`:
-
-   ```properties
-   googleMapsApiKeyDebug=YOUR_RESTRICTED_DEBUG_KEY
-   googleMapsApiKeyRelease=YOUR_RESTRICTED_PRODUCTION_KEY
-   ```
-
-   `googleMapsApiKey` is also accepted as a debug-only fallback. Alternatively,
-   provide `GOOGLE_MAPS_API_KEY_DEBUG` and `GOOGLE_MAPS_API_KEY_RELEASE`
-   environment variables. Do not place keys in Dart source or commit them.
-4. Build/run Android with the key-availability flag so the UI can explain
-   missing native configuration instead of showing an empty map:
-
-   ```powershell
-   flutter run --dart-define=GOOGLE_MAPS_API_KEY_CONFIGURED=true
-   ```
-
-   When using the local Django server over USB, first run
-   `adb reverse tcp:8000 tcp:8000`, then also pass
-   `--dart-define=BASE_URL=http://127.0.0.1:8000`.
-5. For iOS (supported with Google Maps SDK 9, matching the project's iOS 15
-   deployment target), create the ignored local file `ios/Flutter/MapsKeys.xcconfig`
-   containing `GOOGLE_MAPS_API_KEY = YOUR_RESTRICTED_IOS_KEY`. Restrict this
-   key to Maps SDK for iOS. The iOS app reads the key from its build-time
-   Info.plist entry; the optional xcconfig is not committed.
+The map uses OpenStreetMap's public tile service and requires no API key.
+`© OpenStreetMap contributors` is displayed on the map and links to the
+copyright page. Map tiles require an internet connection; follow the
+[OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/),
+including its attribution, identification, and no-bulk-download requirements.
 
 The Android location permissions are foreground-only. Do not add background
 location access for this feature.

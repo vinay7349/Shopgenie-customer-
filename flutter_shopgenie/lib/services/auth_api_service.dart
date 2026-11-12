@@ -30,57 +30,55 @@ class AuthApiService {
   /// Registers a new customer account.
   ///
   /// POST /auth/register/customer/
-  /// Body: {username, email, password}
-  /// Returns: AuthResponse with tokens and user (role: CUSTOMER)
-  Future<AuthResponse> registerCustomer({
+  /// Body: {username, email, password, password_confirm, captcha_token}
+  /// Creates an account and queues email verification without returning tokens.
+  Future<void> registerCustomer({
     required String username,
     required String email,
     required String password,
+    required String passwordConfirm,
+    required String captchaToken,
   }) async {
-    final uri = Uri.parse(ApiConfig.fullUrl(ApiConfig.authRegisterCustomerEndpoint));
-
-    final response = await _client
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'username': username,
-            'email': email,
-            'password': password,
-          }),
-        )
-        .timeout(_timeout);
-
-    return _handleAuthResponse(response, 'customer registration');
+    final response = await _client.post(
+      Uri.parse(ApiConfig.fullUrl(ApiConfig.authRegisterCustomerEndpoint)),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'email': email,
+        'password': password,
+        'password_confirm': passwordConfirm,
+        'captcha_token': captchaToken,
+      }),
+    ).timeout(_timeout);
+    _handleRegistrationResponse(response, 'customer registration');
   }
 
   /// Registers a new shop owner account with an associated shop.
   ///
   /// POST /auth/register/owner/
-  /// Body: {username, email, password, shop_name}
-  /// Returns: AuthResponse with tokens, user (role: SHOP_OWNER), and shop
-  Future<AuthResponse> registerOwner({
+  /// Body: {username, email, password, password_confirm, shop_name, captcha_token}
+  /// Creates an account and queues email verification without returning tokens.
+  Future<void> registerOwner({
     required String username,
     required String email,
     required String password,
+    required String passwordConfirm,
     required String shopName,
+    required String captchaToken,
   }) async {
-    final uri = Uri.parse(ApiConfig.fullUrl(ApiConfig.authRegisterOwnerEndpoint));
-
-    final response = await _client
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'username': username,
-            'email': email,
-            'password': password,
-            'shop_name': shopName,
-          }),
-        )
-        .timeout(_timeout);
-
-    return _handleAuthResponse(response, 'owner registration');
+    final response = await _client.post(
+      Uri.parse(ApiConfig.fullUrl(ApiConfig.authRegisterOwnerEndpoint)),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'email': email,
+        'password': password,
+        'password_confirm': passwordConfirm,
+        'shop_name': shopName,
+        'captcha_token': captchaToken,
+      }),
+    ).timeout(_timeout);
+    _handleRegistrationResponse(response, 'owner registration');
   }
 
   /// Logs in an existing user.
@@ -91,6 +89,7 @@ class AuthApiService {
   Future<AuthResponse> login({
     required String username,
     required String password,
+    required String role,
   }) async {
     final uri = Uri.parse(ApiConfig.fullUrl(ApiConfig.authLoginEndpoint));
 
@@ -101,11 +100,36 @@ class AuthApiService {
           body: jsonEncode({
             'username': username,
             'password': password,
+            'role': role,
           }),
         )
         .timeout(_timeout);
 
     return _handleAuthResponse(response, 'login');
+  }
+
+  Future<void> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    final response = await _client.post(
+      Uri.parse(ApiConfig.fullUrl('/auth/email-verification/confirm/')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'code': code}),
+    ).timeout(_timeout);
+    _handlePublicActionResponse(response, 'email verification');
+  }
+
+  Future<void> resendVerification({
+    required String email,
+    required String captchaToken,
+  }) async {
+    final response = await _client.post(
+      Uri.parse(ApiConfig.fullUrl('/auth/email-verification/resend/')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'captcha_token': captchaToken}),
+    ).timeout(_timeout);
+    _handlePublicActionResponse(response, 'verification resend');
   }
 
   /// Refreshes an expired access token.
@@ -260,6 +284,35 @@ class AuthApiService {
     }
 
     return AuthResponse.fromJson(decoded);
+  }
+
+  void _handleRegistrationResponse(http.Response response, String operation) {
+    if (response.statusCode == 202) return;
+    _handlePublicActionResponse(response, operation);
+  }
+
+  void _handlePublicActionResponse(http.Response response, String operation) {
+    if (response.statusCode >= 200 && response.statusCode < 300) return;
+    String message = 'Request could not be completed.';
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        final detail = decoded['detail'];
+        if (detail is String && detail.isNotEmpty) {
+          message = detail;
+        } else {
+          message = decoded.entries
+              .map((entry) => '${entry.key}: ${entry.value is List ? (entry.value as List).join(', ') : entry.value}')
+              .join('; ');
+        }
+      }
+    } on FormatException {
+      message = 'Request could not be completed.';
+    }
+    throw AuthApiException(
+      'Failed $operation: $message',
+      statusCode: response.statusCode,
+    );
   }
 
   void close() => _client.close();

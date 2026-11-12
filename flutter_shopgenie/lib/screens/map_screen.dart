@@ -1,17 +1,13 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../features/nearby_shops/services/location_service.dart';
 import '../features/nearby_shops/widgets/shop_map_view.dart';
 import '../models/store_item.dart';
 import '../services/shop_service.dart';
 import '../theme/app_colors.dart';
-
-const _googleMapsKeyConfigured = bool.fromEnvironment(
-  'GOOGLE_MAPS_API_KEY_CONFIGURED',
-);
 
 class MapScreen extends StatefulWidget {
   final String currentLocation;
@@ -40,7 +36,7 @@ class _MapScreenState extends State<MapScreen> {
 
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   List<StoreItem> _shops = const [];
   StoreItem? _selectedShop;
   String _selectedCategory = 'All';
@@ -50,13 +46,10 @@ class _MapScreenState extends State<MapScreen> {
   bool _isLoadingShops = true;
   bool _isShowingCachedShops = false;
   bool _isLoadingLocation = false;
+  bool _isMapReady = false;
   bool _showList = false;
   String _searchQuery = '';
   LocationAccessStatus? _locationStatus;
-
-  bool get _supportsNativeMap =>
-      defaultTargetPlatform == TargetPlatform.android ||
-      defaultTargetPlatform == TargetPlatform.iOS;
 
   bool get _usesSharedShopCache => widget.loadShops == null;
 
@@ -102,7 +95,7 @@ class _MapScreenState extends State<MapScreen> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -191,12 +184,12 @@ class _MapScreenState extends State<MapScreen> {
         _locationMessage = _messageForLocationStatus(result.status);
       });
       if (result.location case final location?) {
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLngZoom(
+        if (_isMapReady) {
+          _mapController.move(
             LatLng(location.latitude, location.longitude),
             14,
-          ),
-        );
+          );
+        }
       }
     } catch (error) {
       if (!mounted) return;
@@ -258,38 +251,36 @@ class _MapScreenState extends State<MapScreen> {
     return shop.distance.trim();
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    _moveCameraToAvailableShops();
+  void _onMapReady() {
+    _isMapReady = true;
     final location = _deviceLocation;
     if (location != null) {
-      controller.moveCamera(
-        CameraUpdate.newLatLng(
-          LatLng(location.latitude, location.longitude),
-        ),
+      _mapController.move(
+        LatLng(location.latitude, location.longitude),
+        14,
       );
+      return;
     }
+    _moveCameraToAvailableShops();
   }
 
   void _moveCameraToAvailableShops() {
-    if (_deviceLocation != null || _mappedShops.isEmpty) return;
+    if (!_isMapReady || _deviceLocation != null || _mappedShops.isEmpty) {
+      return;
+    }
     final firstShop = _mappedShops.first;
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(firstShop.lat!, firstShop.lng!),
-        12,
-      ),
+    _mapController.move(
+      LatLng(firstShop.lat!, firstShop.lng!),
+      12,
     );
   }
 
   void _selectShop(StoreItem shop) {
     setState(() => _selectedShop = shop);
-    if (hasValidCoordinates(shop)) {
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(shop.lat!, shop.lng!),
-          15,
-        ),
+    if (_isMapReady && hasValidCoordinates(shop)) {
+      _mapController.move(
+        LatLng(shop.lat!, shop.lng!),
+        15,
       );
     }
   }
@@ -438,6 +429,8 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildMapArea() {
+    final hasInitialPosition =
+        _deviceLocation != null || _mappedShops.isNotEmpty;
     final initialTarget = _deviceLocation != null
         ? LatLng(_deviceLocation!.latitude, _deviceLocation!.longitude)
         : _mappedShops.isNotEmpty
@@ -451,20 +444,14 @@ class _MapScreenState extends State<MapScreen> {
     return Stack(
       children: [
         Positioned.fill(
-          child: _supportsNativeMap && _googleMapsKeyConfigured
-              ? ShopMapView(
-                  key: const ValueKey('shopgenie-google-map'),
-                  initialTarget: initialTarget,
-                  markers: markers,
-                  onMapCreated: _onMapCreated,
-                  myLocationEnabled: _deviceLocation != null,
-                )
-              : _MapUnavailable(
-                  message: !_supportsNativeMap
-                      ? 'Google Maps is available in the Android and iOS apps.'
-                      : 'Configure a restricted Google Maps API key to display the map. You can browse shops in list view.',
-                  onShowList: () => setState(() => _showList = true),
-                ),
+          child: ShopMapView(
+            key: const ValueKey('shopgenie-openstreetmap'),
+            controller: _mapController,
+            initialTarget: initialTarget,
+            initialZoom: hasInitialPosition ? 13 : 2,
+            markers: markers,
+            onMapReady: _onMapReady,
+          ),
         ),
         if (_isLoadingShops)
           const Positioned(
@@ -630,42 +617,6 @@ class _LocationStatusBanner extends StatelessWidget {
               child: const Text('Settings'),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _MapUnavailable extends StatelessWidget {
-  const _MapUnavailable({
-    required this.message,
-    required this.onShowList,
-  });
-
-  final String message;
-  final VoidCallback onShowList;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.map_outlined, size: 48),
-              const SizedBox(height: 12),
-              Text(message, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: onShowList,
-                icon: const Icon(Icons.list_rounded),
-                label: const Text('Browse shop list'),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

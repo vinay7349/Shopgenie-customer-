@@ -1,25 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models/store_item.dart';
 
-Set<Marker> buildShopMarkers(
+List<Marker> buildShopMarkers(
   Iterable<StoreItem> shops, {
   required ValueChanged<StoreItem> onShopSelected,
 }) {
-  return {
+  return [
     for (final shop in shops)
       if (hasValidCoordinates(shop))
         Marker(
-          markerId: MarkerId(shop.id),
-          position: LatLng(shop.lat!, shop.lng!),
-          infoWindow: InfoWindow(
-            title: shop.name,
-            snippet: shop.address.isEmpty ? null : shop.address,
+          key: ValueKey('shop-marker-${shop.id}'),
+          point: LatLng(shop.lat!, shop.lng!),
+          width: 44,
+          height: 48,
+          alignment: Alignment.topCenter,
+          child: GestureDetector(
+            onTap: () => onShopSelected(shop),
+            child: Tooltip(
+              message: shop.name,
+              child: const Icon(
+                Icons.location_on,
+                color: Colors.red,
+                size: 44,
+              ),
+            ),
           ),
-          onTap: () => onShopSelected(shop),
         ),
-  };
+  ];
 }
 
 bool hasValidCoordinates(StoreItem shop) {
@@ -38,31 +49,73 @@ bool hasValidCoordinates(StoreItem shop) {
 class ShopMapView extends StatelessWidget {
   const ShopMapView({
     super.key,
+    required this.controller,
     required this.initialTarget,
+    required this.initialZoom,
     required this.markers,
-    required this.onMapCreated,
-    required this.myLocationEnabled,
+    required this.onMapReady,
   });
 
+  final MapController controller;
   final LatLng initialTarget;
-  final Set<Marker> markers;
-  final ValueChanged<GoogleMapController> onMapCreated;
-  final bool myLocationEnabled;
+  final double initialZoom;
+  final List<Marker> markers;
+  final VoidCallback onMapReady;
 
   @override
   Widget build(BuildContext context) {
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: initialTarget,
-        zoom: 13,
+    return FlutterMap(
+      mapController: controller,
+      options: MapOptions(
+        initialCenter: initialTarget,
+        initialZoom: initialZoom,
+        onMapReady: onMapReady,
       ),
-      markers: markers,
-      myLocationEnabled: myLocationEnabled,
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
-      mapToolbarEnabled: false,
-      compassEnabled: true,
-      onMapCreated: onMapCreated,
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.shopgenie',
+          maxZoom: 19,
+        ),
+        MarkerLayer(markers: markers),
+        Align(
+          alignment: Alignment.bottomLeft,
+          child: SafeArea(
+            minimum: const EdgeInsets.all(4),
+            child: Material(
+              color: Theme.of(context).colorScheme.surface.withValues(
+                    alpha: 0.85,
+                  ),
+              borderRadius: BorderRadius.circular(4),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(4),
+                onTap: () async {
+                  final opened = await launchUrl(
+                    Uri.parse('https://www.openstreetmap.org/copyright'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                  if (!opened && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Could not open the OpenStreetMap copyright page.',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  child: Text(
+                    '© OpenStreetMap contributors',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
